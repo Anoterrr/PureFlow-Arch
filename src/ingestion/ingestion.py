@@ -7,7 +7,7 @@ def ingest_to_bronze():
     factory = ConnectionFactory()
     conn = factory.get_duckdb_conn()
 
-    # Caminhos
+    # paths
     input_csv = "data/raw_external_data.csv"
     output_bronze = "data/bronze/transactions_raw.parquet"
 

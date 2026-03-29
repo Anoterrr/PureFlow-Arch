@@ -1,8 +1,10 @@
+"""Module for generating synthetic dirty data for testing purposes."""
 import pandas as pd
 import numpy as np
 
 
 def generate_dirty_data():
+    """Generates a CSV file with synthetic transactions containing intentional anomalies."""
     n_rows = 1000
     data = {
         "transaction_id": range(1, n_rows + 1),

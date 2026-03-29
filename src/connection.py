@@ -1,3 +1,4 @@
+"""Module to manage connections to Storage (MinIO) and the Processing Engine (DuckDB)."""
 import os
 import duckdb
 from dotenv import load_dotenv

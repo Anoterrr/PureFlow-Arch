@@ -1,9 +1,10 @@
-import duckdb
+"""Module for ingesting raw data into the Bronze layer."""
 import os
 from connection import ConnectionFactory
 
 
 def ingest_to_bronze():
+    """Reads raw CSV data and saves it as Parquet in the Bronze layer using DuckDB."""
     factory = ConnectionFactory()
     conn = factory.get_duckdb_conn()
 
@@ -18,7 +19,7 @@ def ingest_to_bronze():
     # DuckDB reads the CSV and writes Parquet atomically
     conn.execute(
         f"""
-        COPY (SELECT *, now() as ingested_at FROM read_csv_auto('{input_csv}')) 
+        COPY (SELECT *, now() as ingested_at FROM read_csv_auto('{input_csv}'))
         TO '{output_bronze}' (FORMAT 'PARQUET')
     """
     )

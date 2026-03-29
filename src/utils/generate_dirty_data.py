@@ -10,9 +10,12 @@ def generate_dirty_big_data():
     """Generates partitioned sales and customer data with anomalies for testing scale and quality."""
     # Configuration
     base_date = "2024-03-29"
-    landing_zone = "data/landing-zone"
-    vendas_path = f"{landing_zone}/erp_vendas/{base_date}"
-    clientes_path = f"{landing_zone}/crm_clientes/{base_date}"
+    # Unified landing zone
+    landing_zone = "data/minio_data/landing-zone"
+    
+    # Hive-style partitioning
+    vendas_path = f"{landing_zone}/erp_vendas/dt={base_date}"
+    clientes_path = f"{landing_zone}/crm_clientes/dt={base_date}"
 
     # Create directories
     os.makedirs(vendas_path, exist_ok=True)
@@ -20,7 +23,7 @@ def generate_dirty_big_data():
 
     # 1. Generate crm_clientes (~100k rows)
     n_customers = 100_000
-    print(f"🚀 Generating {n_customers} customers...")
+    print(f"🚀 Generating {n_customers} customers (DIRTY)...")
     customers = {
         "customer_id": range(1000, 1000 + n_customers),
         "name": [f"Customer_{i}" for i in range(n_customers)],
@@ -30,11 +33,12 @@ def generate_dirty_big_data():
         ),
     }
     df_customers = pd.DataFrame(customers)
+    # Using JSON for customers as before, but in the new path
     df_customers.to_json(f"{clientes_path}/clientes.json", orient="records", lines=True)
 
     # 2. Generate erp_vendas (~1M rows)
     n_vendas = 1_000_000
-    print(f"🚀 Generating {n_vendas} sales records...")
+    print(f"🚀 Generating {n_vendas} sales records (DIRTY)...")
     vendas = {
         "order_id": range(1, n_vendas + 1),
         "customer_id": np.random.randint(1000, 1000 + n_customers + 500, size=n_vendas),
@@ -48,18 +52,15 @@ def generate_dirty_big_data():
     }
     df_vendas = pd.DataFrame(vendas)
 
-    # 3. Inserting Anomalies (for the Gatekeeper/Great Expectations)
+    # 3. Inserting Anomalies
     print("⚠️ Inserting intentional anomalies for quality testing...")
-    # Negative amounts (Error)
     df_vendas.loc[0:500, "amount"] = -50.0
-    # Null customers (Error)
     df_vendas.loc[1000:1500, "customer_id"] = np.nan
-    # Massive outliers (Anomaly)
     df_vendas.loc[2000:2100, "amount"] = 99_999_999.0
 
     df_vendas.to_csv(f"{vendas_path}/vendas.csv", index=False)
 
-    print(f"✅ Big Data generated successfully in: {landing_zone}")
+    print(f"✅ Dirty Big Data generated successfully in: {landing_zone}")
 
 
 if __name__ == "__main__":

@@ -8,13 +8,19 @@ def ingest_to_bronze():
     factory = ConnectionFactory()
     conn = factory.get_duckdb_conn()
 
-    # paths
-    input_csv = "data/raw_external_data.csv"
-    output_bronze = "data/bronze/transactions_raw.parquet"
+    # Base landing zone path (inside minio_data)
+    # Using Hive partitioning: erp_vendas/dt=2024-03-29/vendas.csv
+    base_date = "2024-03-29"
+    input_csv = f"data/minio_data/landing-zone/erp_vendas/dt={base_date}/vendas.csv"
+    output_bronze = f"data/minio_data/bronze/transactions_raw_{base_date}.parquet"
 
-    os.makedirs("data/bronze", exist_ok=True)
+    os.makedirs("data/minio_data/bronze", exist_ok=True)
 
-    print("🚀 Ingesting data to Bronze layer...")
+    print(f"🚀 Ingesting data from {input_csv} to Bronze layer...")
+
+    if not os.path.exists(input_csv):
+        print(f"❌ Error: Input file not found at {input_csv}")
+        return
 
     # DuckDB reads the CSV and writes Parquet atomically
     conn.execute(

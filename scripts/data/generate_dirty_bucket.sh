@@ -10,13 +10,12 @@ poetry run python src/utils/generate_dirty_data.py
 echo "📤 Uploading to MinIO bucket 'landing-zone'..."
 
 # Use a temporary mc container connected to the project network
-# Adjust 'admin' and 'strongpassword123' if changed in .env
 docker run --rm --network pureflow-arch_pureflow_net \
-  -v "$(pwd)/data/landing-zone:/data/landing-zone" \
+  -v "$(pwd)/data/minio_data/landing-zone:/data/minio_data/landing-zone" \
   minio/mc \
   /bin/sh -c "
   /usr/bin/mc config host add myminio http://minio:9000 admin strongpassword123;
-  /usr/bin/mc cp --recursive /data/landing-zone/ myminio/landing-zone/;
+  /usr/bin/mc cp --recursive /data/minio_data/landing-zone/ myminio/landing-zone/;
   echo '✅ Upload complete!'
   "
 

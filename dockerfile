@@ -1,33 +1,25 @@
 # Use a slim Python image for efficiency
 FROM python:3.11-slim
 
-# 1. Install system dependencies (needed for DuckDB extensions and C-based libs)
+# 1. Dependências de sistema (essenciais para DuckDB e dbt)
 RUN apt-get update && apt-get install -y \
-    curl \
-    build-essential \
-    libpq-dev \
-    git \
+    curl build-essential libpq-dev git gcc python3-dev \
     && rm -rf /var/lib/apt/lists/*
 
-# 2. Install Poetry
-ENV POETRY_VERSION=1.7.1
+# 2. Instala Poetry 2.0+ (suporte nativo ao bloco [project])
+ENV POETRY_VERSION=2.0.1
 RUN curl -sSL https://install.python-poetry.org | python3 -
 ENV PATH="/root/.local/bin:$PATH"
 
-# 3. Set working directory
 WORKDIR /app
 
-# 4. Copy dependency files first (optimizes Docker layer caching)
+# 3. Copia apenas os arquivos de dependência primeiro
 COPY pyproject.toml poetry.lock* /app/
 
-# 5. Install dependencies
-# We tell Poetry not to create a virtualenv inside the container 
-# because the container itself is already an isolated environment.
+# 4. Instalação sem ambiente virtual (dentro do container)
 RUN poetry config virtualenvs.create false \
-    && poetry install --no-interaction --no-ansi
+    && poetry install --no-interaction --no-ansi --no-root
 
-# 6. Copy the rest of the application
 COPY . /app
 
-# Default command: keep container alive for interactive use
 CMD ["tail", "-f", "/dev/null"]

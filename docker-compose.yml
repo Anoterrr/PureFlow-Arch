@@ -23,6 +23,7 @@ services:
       - AIRFLOW__CORE__EXECUTOR=LocalExecutor
       - AIRFLOW__CORE__SQL_ALCHEMY_CONN=postgresql+psycopg2://airflow:airflow@postgres:5432/airflow
       - PYTHONPATH=/opt/airflow/src
+      - _PIP_ADDITIONAL_REQUIREMENTS=duckdb dbt-duckdb great-expectations pandas deltalake
     volumes:
       - .:/opt/airflow
     ports:

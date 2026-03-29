@@ -68,6 +68,9 @@ services:
       /bin/sh -c "
       until (/usr/bin/mc config host add myminio http://minio:9000 ${STORAGE_USER} ${STORAGE_PASSWORD}) do echo '...waiting for minio...' && sleep 1; done;
       /usr/bin/mc mb myminio/landing-zone;
+      /usr/bin/mc mb myminio/bronze;
+      /usr/bin/mc mb myminio/silver;
+      /usr/bin/mc mb myminio/gold;
       exit 0;
       "
 

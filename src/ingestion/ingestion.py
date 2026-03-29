@@ -1,6 +1,6 @@
 """Module for ingesting raw data into the Bronze layer."""
 import os
-from connection import ConnectionFactory
+from core.connection import ConnectionFactory
 
 
 def ingest_to_bronze():

@@ -12,6 +12,11 @@ services:
     volumes:
       - ./data/minio_data:/data
     command: server /data --console-address ":9001"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
     networks:
       - pureflow_net
 
@@ -23,14 +28,16 @@ services:
       - AIRFLOW__CORE__EXECUTOR=LocalExecutor
       - AIRFLOW__CORE__SQL_ALCHEMY_CONN=postgresql+psycopg2://airflow:airflow@postgres:5432/airflow
       - PYTHONPATH=/opt/airflow/src
-      - _PIP_ADDITIONAL_REQUIREMENTS=duckdb dbt-duckdb great-expectations pandas deltalake
+      - _PIP_ADDITIONAL_REQUIREMENTS=duckdb dbt-duckdb great-expectations pandas deltalake python-dotenv
     volumes:
       - .:/opt/airflow
     ports:
       - "8080:8080"
     depends_on:
-      - postgres
-      - minio
+      postgres:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
     networks:
       - pureflow_net
 
@@ -41,6 +48,11 @@ services:
       - POSTGRES_USER=airflow
       - POSTGRES_PASSWORD=airflow
       - POSTGRES_DB=airflow
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U airflow"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
     networks:
       - pureflow_net
 
@@ -48,7 +60,8 @@ services:
   createbuckets:
     image: minio/mc
     depends_on:
-      - minio
+      minio:
+        condition: service_healthy
     networks:
       - pureflow_net
     entrypoint: >
@@ -66,7 +79,8 @@ services:
       - .:/app
     env_file: .env
     depends_on:
-      - minio
+      minio:
+        condition: service_healthy
     networks:
       - pureflow_net
     stdin_open: true

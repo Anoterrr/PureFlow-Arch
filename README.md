@@ -63,7 +63,7 @@ docker-compose up -d --build
 
 ---
 
-🛡️ O Diferencial: O Gatekeeper em Ação
+### 🛡️ O Diferencial: O Gatekeeper em Ação
 Diferente de pipelines ETL comuns, o PureFlow-Arch foca na observabilidade. Durante a execução:
 * Se um dado corrompido (ex: valor_venda negativo) tenta entrar na Silver, o Great Expectations detecta a anomalia.
 * O Airflow recebe o sinal de falha e impede que o dbt processe a camada Gold com dados errados.
@@ -71,5 +71,5 @@ Diferente de pipelines ETL comuns, o PureFlow-Arch foca na observabilidade. Dura
 
 ---
 
-📄 Licença
+### 📄 Licença
 Este projeto está sob a licença MIT. Veja o arquivo LICENSE para mais detalhes.

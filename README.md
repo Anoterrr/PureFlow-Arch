@@ -8,7 +8,7 @@
 
 O projeto opera em um ambiente isolado via **Docker** no **Arch WSL**, simulando um pipeline de dados corporativo real. A imagem abaixo detalha como os componentes interagem:
 
-![Arquitetura PureFlow-Arch](docs/architecture.png)
+![Arquitetura PureFlow-Arch](docs/pureflow_architecture.png)
 
 ### O Fluxo em Detalhes:
 

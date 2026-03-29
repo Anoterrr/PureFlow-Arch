@@ -63,21 +63,6 @@ docker-compose up -d --build
 
 ---
 
-📊 Estrutura de Pastas
-```bash
-.
-├── dags/                # Definições de fluxos do Airflow
-├── data/                # Volumes de dados (Bronze, Silver, Gold, DB)
-├── dbt_project/         # Modelos de transformação dbt (SQL)
-├── docs/                # Diagramas e documentação técnica
-├── gx/                  # Expectativas e checkpoints do Great Expectations
-├── src/                 # Scripts Python (Ingestão, Connection Factory)
-├── docker-compose.yml   # Orquestração de serviços (MinIO, Airflow, App)
-├── pyproject.toml       # Configuração do Poetry e Dependências
-└── README.md            # Documentação do projeto
-```
----
-
 🛡️ O Diferencial: O Gatekeeper em Ação
 Diferente de pipelines ETL comuns, o PureFlow-Arch foca na observabilidade. Durante a execução:
 * Se um dado corrompido (ex: valor_venda negativo) tenta entrar na Silver, o Great Expectations detecta a anomalia.

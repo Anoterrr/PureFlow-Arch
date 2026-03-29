@@ -48,6 +48,7 @@ No terminal do seu Arch WSL, prepare as permissões e o ambiente:
 mkdir -p data/minio_data docs
 touch README.md
 poetry lock
+```
 
 ### 2. Inicialização
 Suba os serviços definidos no docker-compose.yml:
@@ -63,6 +64,7 @@ docker-compose up -d --build
 ---
 
 📊 Estrutura de Pastas
+```bash
 .
 ├── dags/                # Definições de fluxos do Airflow
 ├── data/                # Volumes de dados (Bronze, Silver, Gold, DB)
@@ -73,12 +75,16 @@ docker-compose up -d --build
 ├── docker-compose.yml   # Orquestração de serviços (MinIO, Airflow, App)
 ├── pyproject.toml       # Configuração do Poetry e Dependências
 └── README.md            # Documentação do projeto
+```
+---
 
 🛡️ O Diferencial: O Gatekeeper em Ação
 Diferente de pipelines ETL comuns, o PureFlow-Arch foca na observabilidade. Durante a execução:
 * Se um dado corrompido (ex: valor_venda negativo) tenta entrar na Silver, o Great Expectations detecta a anomalia.
 * O Airflow recebe o sinal de falha e impede que o dbt processe a camada Gold com dados errados.
 * O engenheiro de dados recebe um alerta e pode consultar o Data Doc HTML para ver exatamente qual linha e coluna causou o erro.
+
+---
 
 📄 Licença
 Este projeto está sob a licença MIT. Veja o arquivo LICENSE para mais detalhes.

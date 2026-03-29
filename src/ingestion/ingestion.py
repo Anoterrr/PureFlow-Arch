@@ -13,9 +13,9 @@ def ingest_to_bronze():
 
     os.makedirs("data/bronze", exist_ok=True)
 
-    print("🚀 Ingerindo dados para a camada Bronze...")
+    print("🚀 Ingesting data to Bronze layer...")
 
-    # DuckDB lê o CSV e escreve Parquet de forma atômica
+    # DuckDB reads the CSV and writes Parquet atomically
     conn.execute(
         f"""
         COPY (SELECT *, now() as ingested_at FROM read_csv_auto('{input_csv}')) 
@@ -23,7 +23,7 @@ def ingest_to_bronze():
     """
     )
 
-    print(f"✔️ Camada Bronze atualizada: {output_bronze}")
+    print(f"✔️ Bronze layer updated: {output_bronze}")
     conn.close()
 
 

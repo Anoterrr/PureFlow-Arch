@@ -13,13 +13,13 @@ def generate_dirty_data():
 
     df = pd.DataFrame(data)
 
-    # Inserindo "Sujeira" (Anomalias)
-    df.loc[0:10, "amount"] = -99.0  # Erro: Valor negativo
-    df.loc[20:30, "customer_id"] = np.nan  # Erro: Valores nulos
-    df.loc[50:60, "amount"] = 999999.0  # Erro: Outlier absurdo
+    # Inserting "Dirty" data (Anomalies)
+    df.loc[0:10, "amount"] = -99.0  # Error: Negative value
+    df.loc[20:30, "customer_id"] = np.nan  # Error: Null values
+    df.loc[50:60, "amount"] = 999999.0  # Error: Extreme outlier
 
     df.to_csv("data/raw_external_data.csv", index=False)
-    print("✅ Dataset 'sujo' gerado em data/raw_external_data.csv")
+    print("✅ 'Dirty' dataset generated at data/raw_external_data.csv")
 
 
 if __name__ == "__main__":

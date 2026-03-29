@@ -34,7 +34,7 @@ services:
     networks:
       - pureflow_net
 
-  postgres: # Necessário para o metadata do Airflow
+  postgres: # Necessary for Airflow metadata
     image: postgres:13
     container_name: pureflow_metadata
     environment:

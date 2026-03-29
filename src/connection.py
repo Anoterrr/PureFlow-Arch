@@ -6,19 +6,19 @@ load_dotenv()
 
 
 class ConnectionFactory:
-    """Gerencia conexões com o Storage (MinIO) e o Motor de Processamento (DuckDB)."""
+    """Manages connections to Storage (MinIO) and the Processing Engine (DuckDB)."""
 
     @staticmethod
     def get_duckdb_conn():
-        """Retorna uma conexão DuckDB configurada para o ambiente local."""
+        """Returns a DuckDB connection configured for the local environment."""
         db_path = os.getenv("DUCKDB_PATH", "data/datagate_local.db")
         conn = duckdb.connect(db_path)
 
-        # Configurações para Arch WSL / 32GB RAM
-        conn.execute("SET memory_limit = '16GB'")  # Reserva metade para o DuckDB
-        conn.execute("SET threads = 4")  # Ajuste conforme seu processador
+        # Configurations for Arch WSL / 32GB RAM
+        conn.execute("SET memory_limit = '16GB'")  # Reserve half for DuckDB
+        conn.execute("SET threads = 4")  # Adjust according to your processor
 
-        # Instala extensões para ler do MinIO (S3)
+        # Install extensions to read from MinIO (S3)
         conn.execute("INSTALL httpfs;")
         conn.execute("LOAD httpfs;")
 
@@ -26,7 +26,7 @@ class ConnectionFactory:
 
     @staticmethod
     def setup_s3_auth(conn):
-        """Configura as credenciais para o DuckDB enxergar o MinIO."""
+        """Configures credentials for DuckDB to see MinIO."""
         conn.execute(
             f"SET s3_endpoint = '{os.getenv('S3_ENDPOINT').replace('http://', '')}'"
         )

@@ -1,12 +1,12 @@
 #!/bin/bash
-echo "--- Verificando Containers ---"
+echo "--- Checking Containers ---"
 docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
 
-echo -e "\n--- Testando Rede Interna (DNS) ---"
-docker exec pureflow_app ping minio -c 2 || echo "ERRO: App não enxerga o MinIO"
+echo -e "\n--- Testing Internal Network (DNS) ---"
+docker exec pureflow_app ping minio -c 2 || echo "ERROR: App cannot see MinIO"
 
-echo -e "\n--- Testando Permissões de Escrita (Data Lake) ---"
-docker exec pureflow_app touch /app/data/write_test && echo "Escrita: OK" || echo "ERRO: Sem permissão em /app/data"
+echo -e "\n--- Testing Write Permissions (Data Lake) ---"
+docker exec pureflow_app touch /app/data/write_test && echo "Write: OK" || echo "ERROR: No permission in /app/data"
 
-echo -e "\n--- Testando dbt + DuckDB ---"
+echo -e "\n--- Testing dbt + DuckDB ---"
 docker exec pureflow_app dbt debug

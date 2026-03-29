@@ -1,75 +1,76 @@
 # 🌀 PureFlow-Arch: Medallion Lakehouse with Data Gatekeeper
 
-**PureFlow-Arch** é uma plataforma de engenharia de dados de alta performance projetada para garantir a integridade e a qualidade dos dados em um ambiente de Lakehouse local. O projeto implementa o padrão de **Arquitetura de Medalhão** (Bronze, Silver, Gold) com um **Gatekeeper** (Circuit Breaker) ativo, utilizando o ecossistema Python moderno.
+**PureFlow-Arch** is a high-performance data engineering platform designed to ensure data integrity and quality in a local Lakehouse environment. The project implements the **Medallion Architecture** pattern (Bronze, Silver, Gold) with an active **Gatekeeper** (Circuit Breaker), utilizing the modern Python ecosystem.
 
 ---
 
-## 🏗️ Arquitetura e Fluxo de Dados
+## 🏗️ Architecture and Data Flow
 
-O projeto opera em um ambiente isolado via **Docker** no **Arch WSL**, simulando um pipeline de dados corporativo real. A imagem abaixo detalha como os componentes interagem:
+The project operates in an isolated environment via **Docker** on **Arch WSL**, simulating a real corporate data pipeline. The image below details how the components interact:
 
-![Arquitetura PureFlow-Arch](docs/pureflow_architecture.png)
+![PureFlow-Arch Architecture](docs/pureflow_architecture.png)
 
-### O Fluxo em Detalhes:
+### The Flow in Detail:
 
-1.  **Landing Zone (MinIO/S3):** O ponto de entrada. Arquivos brutos (CSV/JSON) são recebidos via API S3 simulada pelo MinIO.
-2.  **Ingestão (DuckDB):** O DuckDB lê os arquivos diretamente do S3 (via extensão `httpfs`), convertendo-os para **Parquet**.
-3.  **Bronze Layer (Raw):** Armazenamento eficiente de arquivos Parquet, mantendo a fidelidade total à fonte (sem transformações).
-4.  **Gatekeeper (Great Expectations):** A camada de confiança. Valida tipos, nulos e regras de negócio. Se o dado falhar nas "Expectativas", o pipeline é interrompido e o arquivo é movido para `/quarantine`.
-5.  **Silver Layer (Cleansed):** Dados validados e normalizados, persistidos no formato **Delta Lake**, garantindo transações ACID e versionamento (Time Travel).
-6.  **Gold Layer (Curated):** Transformações finais e agregações de negócio executadas pelo **dbt**. O produto final é materializado em tabelas analíticas dentro do arquivo `.db` do DuckDB, prontas para consumo.
+1.  **Landing Zone (MinIO/S3):** The entry point. Raw files (CSV/JSON) are received via a simulated S3 API provided by MinIO.
+2.  **Ingestion (DuckDB):** DuckDB reads files directly from S3 (via the `httpfs` extension), converting them to **Parquet**.
+3.  **Bronze Layer (Raw):** Efficient storage of Parquet files, maintaining full source fidelity (no transformations).
+4.  **Gatekeeper (Great Expectations):** The trust layer. Validates types, nulls, and business rules. If the data fails the "Expectations", the pipeline is interrupted and the file is moved to `/quarantine`.
+5.  **Silver Layer (Cleansed):** Validated and normalized data, persisted in **Delta Lake** format, ensuring ACID transactions and versioning (Time Travel).
+6.  **Gold Layer (Curated):** Final transformations and business aggregations executed by **dbt**. The final product is materialized into analytical tables within the DuckDB `.db` file, ready for consumption.
 
 ---
 
-## 🛠️ Stack Tecnológica
+## 🛠️ Technology Stack
 
-| Componente | Tecnologia | Papel Principal |
+| Component | Technology | Main Role |
 | :--- | :--- | :--- |
-| **Orquestração** | Apache Airflow | Coordena o agendamento e a execução das tarefas (DAGs). |
-| **Engine de Dados** | DuckDB | Processamento OLAP in-process de alta performance. |
-| **Transformação** | dbt (duckdb-adapter) | Gerencia a linhagem (lineage) e modelos SQL. |
-| **Qualidade** | Great Expectations | Validação de contratos de dados (Gatekeeper). |
-| **Armazenamento** | MinIO + Delta Lake | Storage compatível com S3 e tabelas de alto desempenho. |
-| **Ambiente** | Docker + Poetry | Isolamento de infraestrutura e gestão de dependências. |
+| **Orchestration** | Apache Airflow | Coordinates task scheduling and execution (DAGs). |
+| **Data Engine** | DuckDB | High-performance in-process OLAP processing. |
+| **Transformation** | dbt (duckdb-adapter) | Manages lineage and SQL models. |
+| **Quality** | Great Expectations | Data contract validation (Gatekeeper). |
+| **Storage** | MinIO + Delta Lake | S3-compatible storage and high-performance tables. |
+| **Environment** | Docker + Poetry | Infrastructure isolation and dependency management. |
 
 ---
 
-## 🚀 Como Executar o Projeto
+## 🚀 How to Run the Project
 
-### Pré-requisitos
-* Docker & Docker Compose instalado.
-* WSL2 (Ambiente testado: Arch Linux).
-* Poetry (v2.0+) instalado no host (Arch).
+### Prerequisites
+* Docker & Docker Compose installed.
+* WSL2 (Environment tested: Arch Linux).
+* Poetry (v2.0+) installed on host (Arch).
 
-### 1. Preparação
-No terminal do seu Arch WSL, prepare as permissões e o ambiente:
+### 1. Preparation
+In your Arch WSL terminal, prepare permissions and the environment:
 ```bash
-# Cria pastas de volume e documentação
+# Create volume and documentation folders
 mkdir -p data/minio_data docs
 touch README.md
 poetry lock
 ```
 
-### 2. Inicialização
-Suba os serviços definidos no docker-compose.yml:
+### 2. Initialization
+Spin up the services defined in docker-compose.yml:
 
-Bash
+```bash
 docker-compose up -d --build
+```
 
-### 3. Acessar as Interfaces
+### 3. Access the Interfaces
 * Airflow UI: http://localhost:8080 (user: admin / pass: admin)
 * MinIO Console: http://localhost:9001 (user: admin / pass: password123)
-* Data Docs (Relatórios de Qualidade): Localizado em gx/uncommitted/data_docs/local_site/index.html
+* Data Docs (Quality Reports): Located at gx/uncommitted/data_docs/local_site/index.html
 
 ---
 
-### 🛡️ O Diferencial: O Gatekeeper em Ação
-Diferente de pipelines ETL comuns, o PureFlow-Arch foca na observabilidade. Durante a execução:
-* Se um dado corrompido (ex: valor_venda negativo) tenta entrar na Silver, o Great Expectations detecta a anomalia.
-* O Airflow recebe o sinal de falha e impede que o dbt processe a camada Gold com dados errados.
-* O engenheiro de dados recebe um alerta e pode consultar o Data Doc HTML para ver exatamente qual linha e coluna causou o erro.
+### 🛡️ The Differentiator: Gatekeeper in Action
+Unlike common ETL pipelines, PureFlow-Arch focuses on observability. During execution:
+* If corrupted data (e.g., negative sales value) tries to enter Silver, Great Expectations detects the anomaly.
+* Airflow receives the failure signal and prevents dbt from processing the Gold layer with incorrect data.
+* The data engineer receives an alert and can consult the HTML Data Doc to see exactly which row and column caused the error.
 
 ---
 
-### 📄 Licença
-Este projeto está sob a licença MIT. Veja o arquivo LICENSE para mais detalhes.
+### 📄 License
+This project is under the MIT license. See the LICENSE file for more details.

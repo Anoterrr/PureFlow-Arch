@@ -205,3 +205,23 @@ cython_debug/
 marimo/_static/
 marimo/_lsp/
 __marimo__/
+
+# --- PureFlow-Arch Project Specific ---
+# Data Storage (Avoid committing large binary files or local databases)
+data/*
+!data/.gitkeep
+# Re-ignore subfolders just to be explicit
+data/minio_data/
+data/landing-zone/
+data/landing-zone-clean/
+data/bronze/
+data/silver/
+data/gold/
+data/quarantine/
+*.db
+*.db.wal
+
+# Great Expectations (Exclude uncommitted data docs and sensitive info)
+gx/uncommitted/
+gx/plugins/
+gx/expectations/checkout/

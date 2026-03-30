@@ -27,6 +27,7 @@ services:
     # Run as host user UID 1000 to avoid permission issues with mounted volumes
     user: "1000:0"
     environment:
+      - AIRFLOW_HOME=/opt/airflow/.airflow
       - AIRFLOW__CORE__EXECUTOR=LocalExecutor
       - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql+psycopg2://airflow:airflow@postgres:5432/airflow
       - AIRFLOW_UID=1000
@@ -34,7 +35,6 @@ services:
       - _PIP_ADDITIONAL_REQUIREMENTS=duckdb dbt-duckdb great-expectations pandas deltalake python-dotenv
     volumes:
       - .:/opt/airflow
-      - ./logs:/opt/airflow/logs
     ports:
       - "8080:8080"
     depends_on:

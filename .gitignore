@@ -210,14 +210,7 @@ __marimo__/
 # Data Storage (Avoid committing large binary files or local databases)
 data/*
 !data/.gitkeep
-# Re-ignore subfolders just to be explicit
 data/minio_data/
-data/landing-zone/
-data/landing-zone-clean/
-data/bronze/
-data/silver/
-data/gold/
-data/quarantine/
 *.db
 *.db.wal
 
@@ -225,3 +218,7 @@ data/quarantine/
 gx/uncommitted/
 gx/plugins/
 gx/expectations/checkout/
+
+# Airflow Home
+.airflow/*
+!.airflow/.gitkeep

@@ -24,13 +24,17 @@ services:
   airflow:
     image: apache/airflow:2.7.1-python3.11
     container_name: pureflow_airflow
+    # Run as host user UID 1000 to avoid permission issues with mounted volumes
+    user: "1000:0"
     environment:
       - AIRFLOW__CORE__EXECUTOR=LocalExecutor
-      - AIRFLOW__CORE__SQL_ALCHEMY_CONN=postgresql+psycopg2://airflow:airflow@postgres:5432/airflow
+      - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql+psycopg2://airflow:airflow@postgres:5432/airflow
+      - AIRFLOW_UID=1000
       - PYTHONPATH=/opt/airflow/src
       - _PIP_ADDITIONAL_REQUIREMENTS=duckdb dbt-duckdb great-expectations pandas deltalake python-dotenv
     volumes:
       - .:/opt/airflow
+      - ./logs:/opt/airflow/logs
     ports:
       - "8080:8080"
     depends_on:
@@ -38,6 +42,7 @@ services:
         condition: service_healthy
       minio:
         condition: service_healthy
+    command: standalone
     networks:
       - pureflow_net
 
@@ -55,24 +60,6 @@ services:
       retries: 5
     networks:
       - pureflow_net
-
-  # --- CREATE BUCKETS: Automates the "Landing Zone" setup ---
-  createbuckets:
-    image: minio/mc
-    depends_on:
-      minio:
-        condition: service_healthy
-    networks:
-      - pureflow_net
-    entrypoint: >
-      /bin/sh -c "
-      until (/usr/bin/mc config host add myminio http://minio:9000 ${STORAGE_USER} ${STORAGE_PASSWORD}) do echo '...waiting for minio...' && sleep 1; done;
-      /usr/bin/mc mb --ignore-existing myminio/landing-zone;
-      /usr/bin/mc mb --ignore-existing myminio/bronze;
-      /usr/bin/mc mb --ignore-existing myminio/silver;
-      /usr/bin/mc mb --ignore-existing myminio/gold;
-      exit 0;
-      "
 
   # --- APP: The Dev Environment (Python, dbt, GX) ---
   app:

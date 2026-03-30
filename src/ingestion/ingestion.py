@@ -1,36 +1,38 @@
-"""Module for ingesting raw data into the Bronze layer."""
-import os
+"""Module for ingesting raw data from MinIO (S3) into the Bronze layer."""
 from core.connection import ConnectionFactory
+from core.config import get_s3_paths
 
 
 def ingest_to_bronze():
-    """Reads raw CSV data and saves it as Parquet in the Bronze layer using DuckDB."""
+    """Reads raw CSV/JSON from S3 and saves as Parquet in the Bronze bucket."""
     factory = ConnectionFactory()
     conn = factory.get_duckdb_conn()
+    factory.setup_s3_auth(conn)
 
-    # Base landing zone path (inside minio_data)
-    # Using Hive partitioning: erp_vendas/dt=2024-03-29/vendas.csv
-    base_date = "2024-03-29"
-    input_csv = f"data/minio_data/landing-zone/erp_vendas/dt={base_date}/vendas.csv"
-    output_bronze = f"data/minio_data/bronze/transactions_raw_{base_date}.parquet"
+    # Get Hive-partitioned S3 paths
+    paths = get_s3_paths()
 
-    os.makedirs("data/minio_data/bronze", exist_ok=True)
+    print("🚀 Starting Ingestion: Landing Zone (S3) -> Bronze (S3)...")
 
-    print(f"🚀 Ingesting data from {input_csv} to Bronze layer...")
-
-    if not os.path.exists(input_csv):
-        print(f"❌ Error: Input file not found at {input_csv}")
-        return
-
-    # DuckDB reads the CSV and writes Parquet atomically
+    # 1. Ingest erp_vendas (CSV)
+    print(f"📥 Ingesting Vendas: {paths['vendas_input']}")
     conn.execute(
         f"""
-        COPY (SELECT *, now() as ingested_at FROM read_csv_auto('{input_csv}'))
-        TO '{output_bronze}' (FORMAT 'PARQUET')
+        COPY (SELECT *, now() as ingested_at FROM read_csv_auto('{paths['vendas_input']}'))
+        TO '{paths['vendas_output']}' (FORMAT 'PARQUET')
     """
     )
 
-    print(f"✔️ Bronze layer updated: {output_bronze}")
+    # 2. Ingest crm_clientes (JSON)
+    print(f"📥 Ingesting Clientes: {paths['clientes_input']}")
+    conn.execute(
+        f"""
+        COPY (SELECT *, now() as ingested_at FROM read_json_auto('{paths['clientes_input']}'))
+        TO '{paths['clientes_output']}' (FORMAT 'PARQUET')
+    """
+    )
+
+    print("✔️ Ingestion to Bronze complete!")
     conn.close()
 
 

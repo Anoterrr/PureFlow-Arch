@@ -70,7 +70,6 @@ services:
       /usr/bin/mc mb myminio/landing-zone;
       /usr/bin/mc mb myminio/bronze;
       /usr/bin/mc mb myminio/silver;
-      /usr/bin/mc mb myminio/gold;
       exit 0;
       "
 

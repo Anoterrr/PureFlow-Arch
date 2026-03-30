@@ -1,25 +1,14 @@
-"""Module for generating synthetic big data with intentional anomalies for the Medallion architecture."""
-
-import os
+"""Module for generating synthetic big data with intentional anomalies."""
 from datetime import datetime
 import pandas as pd
 import numpy as np
+from core.config import get_paths, BASE_DATE
 
 
 def generate_dirty_big_data():
-    """Generates partitioned sales and customer data with anomalies for testing scale and quality."""
-    # Configuration
-    base_date = "2024-03-29"
-    # Unified landing zone
-    landing_zone = "data/minio_data/landing-zone"
-    
-    # Hive-style partitioning
-    vendas_path = f"{landing_zone}/erp_vendas/dt={base_date}"
-    clientes_path = f"{landing_zone}/crm_clientes/dt={base_date}"
-
-    # Create directories
-    os.makedirs(vendas_path, exist_ok=True)
-    os.makedirs(clientes_path, exist_ok=True)
+    """Generates partitioned sales and customer data with anomalies."""
+    # Configuration and directory creation
+    vendas_path, clientes_path = get_paths()
 
     # 1. Generate crm_clientes (~100k rows)
     n_customers = 100_000
@@ -33,7 +22,6 @@ def generate_dirty_big_data():
         ),
     }
     df_customers = pd.DataFrame(customers)
-    # Using JSON for customers as before, but in the new path
     df_customers.to_json(f"{clientes_path}/clientes.json", orient="records", lines=True)
 
     # 2. Generate erp_vendas (~1M rows)
@@ -41,13 +29,15 @@ def generate_dirty_big_data():
     print(f"🚀 Generating {n_vendas} sales records (DIRTY)...")
     vendas = {
         "order_id": range(1, n_vendas + 1),
-        "customer_id": np.random.randint(1000, 1000 + n_customers + 500, size=n_vendas),
+        "customer_id": np.random.randint(
+            1000, 1000 + n_customers + 500, size=n_vendas
+        ),
         "amount": np.random.uniform(5.0, 2000.0, size=n_vendas),
         "category": np.random.choice(
             ["Electronics", "Home", "Fashion", "Grocery", "Garden"], n_vendas
         ),
         "timestamp": [
-            datetime.strptime(base_date, "%Y-%m-%d") for _ in range(n_vendas)
+            datetime.strptime(BASE_DATE, "%Y-%m-%d") for _ in range(n_vendas)
         ],
     }
     df_vendas = pd.DataFrame(vendas)
@@ -59,8 +49,7 @@ def generate_dirty_big_data():
     df_vendas.loc[2000:2100, "amount"] = 99_999_999.0
 
     df_vendas.to_csv(f"{vendas_path}/vendas.csv", index=False)
-
-    print(f"✅ Dirty Big Data generated successfully in: {landing_zone}")
+    print(f"✅ Dirty Big Data generated successfully in: {vendas_path}")
 
 
 if __name__ == "__main__":

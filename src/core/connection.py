@@ -28,10 +28,12 @@ class ConnectionFactory:
     @staticmethod
     def setup_s3_auth(conn):
         """Configures credentials for DuckDB to see MinIO."""
-        conn.execute(
-            f"SET s3_endpoint = '{os.getenv('S3_ENDPOINT').replace('http://', '')}'"
-        )
-        conn.execute(f"SET s3_access_key_id = '{os.getenv('STORAGE_USER')}'")
-        conn.execute(f"SET s3_secret_access_key = '{os.getenv('STORAGE_PASSWORD')}'")
+        s3_endpoint = os.getenv("S3_ENDPOINT", "http://localhost:9000")
+        storage_user = os.getenv("STORAGE_USER", "admin")
+        storage_password = os.getenv("STORAGE_PASSWORD", "password123")
+
+        conn.execute(f"SET s3_endpoint = '{s3_endpoint.replace('http://', '')}'")
+        conn.execute(f"SET s3_access_key_id = '{storage_user}'")
+        conn.execute(f"SET s3_secret_access_key = '{storage_password}'")
         conn.execute("SET s3_use_ssl = false")
         conn.execute("SET s3_url_style = 'path'")

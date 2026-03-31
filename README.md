@@ -59,7 +59,7 @@ docker-compose up -d --build
 
 ### 3. Access the Interfaces
 * Airflow UI: http://localhost:8080 (user: admin / pass: admin)
-* MinIO Console: http://localhost:9001 (user: admin / pass: password123)
+* MinIO Console: http://localhost:9001 (configured via STORAGE_USER and STORAGE_PASSWORD in .env)
 * Data Docs (Quality Reports): Located at gx/uncommitted/data_docs/local_site/index.html
 
 ---

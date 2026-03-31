@@ -1,6 +1,7 @@
 """Module for ingesting raw data from MinIO (S3) into the Bronze layer."""
 from core.connection import ConnectionFactory
 from core.config import get_s3_paths
+from core.logger import logger
 
 
 def ingest_to_bronze():
@@ -12,27 +13,27 @@ def ingest_to_bronze():
     # Get Hive-partitioned S3 paths
     paths = get_s3_paths()
 
-    print("🚀 Starting Ingestion: Landing Zone (S3) -> Bronze (S3)...")
+    logger.info("🚀 Starting Ingestion: Landing Zone (S3) -> Bronze (S3)...")
 
     # 1. Ingest erp_vendas (CSV)
-    print(f"📥 Ingesting Vendas: {paths['vendas_input']}")
+    logger.info(f"📥 Ingesting Vendas: {paths['vendas_landing']}")
     conn.execute(
         f"""
-        COPY (SELECT *, now() as ingested_at FROM read_csv_auto('{paths['vendas_input']}'))
-        TO '{paths['vendas_output']}' (FORMAT 'PARQUET')
+        COPY (SELECT *, now() as ingested_at FROM read_csv_auto('{paths['vendas_landing']}'))
+        TO '{paths['vendas_bronze']}' (FORMAT 'PARQUET')
     """
     )
 
     # 2. Ingest crm_clientes (JSON)
-    print(f"📥 Ingesting Clientes: {paths['clientes_input']}")
+    logger.info(f"📥 Ingesting Clientes: {paths['clientes_landing']}")
     conn.execute(
         f"""
-        COPY (SELECT *, now() as ingested_at FROM read_json_auto('{paths['clientes_input']}'))
-        TO '{paths['clientes_output']}' (FORMAT 'PARQUET')
+        COPY (SELECT *, now() as ingested_at FROM read_json_auto('{paths['clientes_landing']}'))
+        TO '{paths['clientes_bronze']}' (FORMAT 'PARQUET')
     """
     )
 
-    print("✔️ Ingestion to Bronze complete!")
+    logger.info("✔️ Ingestion to Bronze complete!")
     conn.close()
 
 

@@ -3,6 +3,7 @@ import pandas as pd
 import numpy as np
 from core.config import get_paths, BASE_DATE
 from utils.generators import generate_base_customers, generate_base_vendas
+from core.logger import logger
 
 
 def generate_dirty_big_data():
@@ -12,7 +13,7 @@ def generate_dirty_big_data():
 
     # 1. Generate crm_clientes (~100k rows)
     n_customers = 100_000
-    print(f"🚀 Generating {n_customers} customers (DIRTY)...")
+    logger.info(f"🚀 Generating {n_customers} customers (DIRTY)...")
     customers = generate_base_customers(n_customers)
 
     df_customers = pd.DataFrame(customers)
@@ -20,7 +21,7 @@ def generate_dirty_big_data():
 
     # 2. Generate erp_vendas (~1M rows)
     n_vendas = 1_000_000
-    print(f"🚀 Generating {n_vendas} sales records (DIRTY)...")
+    logger.info(f"🚀 Generating {n_vendas} sales records (DIRTY)...")
     vendas = generate_base_vendas(
         n_vendas=n_vendas,
         n_customers=n_customers,
@@ -31,13 +32,13 @@ def generate_dirty_big_data():
     df_vendas = pd.DataFrame(vendas)
 
     # 3. Inserting Anomalies
-    print("⚠️ Inserting intentional anomalies for quality testing...")
+    logger.info("⚠️ Inserting intentional anomalies for quality testing...")
     df_vendas.loc[0:500, "amount"] = -50.0
     df_vendas.loc[1000:1500, "customer_id"] = np.nan
     df_vendas.loc[2000:2100, "amount"] = 99_999_999.0
 
     df_vendas.to_csv(f"{vendas_path}/vendas.csv", index=False)
-    print(f"✅ Dirty Big Data generated successfully in: {vendas_path}")
+    logger.info(f"✅ Dirty Big Data generated successfully in: {vendas_path}")
 
 
 if __name__ == "__main__":

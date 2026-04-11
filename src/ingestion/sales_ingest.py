@@ -6,7 +6,6 @@ from core.connection import ConnectionFactory
 from core.config import get_s3_paths
 from core.logger import logger
 
-# pylint: disable=too-few-public-methods
 class BaseIngestor(ABC):
     """Abstract base class for domain-driven ingestion."""
     def __init__(self, domain: str):

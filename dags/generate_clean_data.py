@@ -4,14 +4,12 @@ DAG to generate CLEAN synthetic data into the Landing Zone.
 import sys
 from datetime import datetime
 
-# pylint: disable=import-error, duplicate-code
 from airflow import DAG
 from airflow.operators.python import PythonOperator
 
 # Ensure src is in PYTHONPATH
 sys.path.append('/opt/airflow/src')
 
-# pylint: disable=wrong-import-position, no-name-in-module
 from utils.generate_clean_data import generate_clean_big_data
 
 DEFAULT_ARGS = {
@@ -35,5 +33,4 @@ with DAG(
         python_callable=generate_clean_big_data,
     )
 
-    # pylint: disable=pointless-statement
     task_gen_clean

@@ -1,6 +1,5 @@
 """Modular Orchestrator for PureFlow-Arch (Sales Domain)."""
 import os
-# pylint: disable=import-error, no-name-in-module
 from ingestion.sales_ingest import SalesIngestor
 from quality.bronze_rules import validate_bronze_quality
 from core.logger import logger

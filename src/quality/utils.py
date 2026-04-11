@@ -19,7 +19,6 @@ def setup_gx_backend(context, datasource_name, factory):
     except (ValueError, KeyError):
         datasource = context.sources.add_duckdb(name=datasource_name)
 
-    # pylint: disable=protected-access
     # This is the only place in the project where we allow this access
     raw_conn = datasource.get_execution_engine()._connection
     factory.setup_s3_auth(raw_conn)

@@ -4,7 +4,6 @@ import pandas as pd
 
 from core.config import get_paths, BASE_DATE
 from core.logger import logger
-# pylint: disable=import-error, no-name-in-module
 from utils.generators import generate_base_customers, generate_base_vendas
 
 

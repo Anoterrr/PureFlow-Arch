@@ -6,7 +6,6 @@ import os
 import sys
 from datetime import datetime, timedelta
 
-# pylint: disable=import-error
 from airflow import DAG
 from airflow.operators.bash import BashOperator
 from airflow.operators.python import PythonOperator
@@ -14,7 +13,6 @@ from airflow.operators.python import PythonOperator
 # Ensure src is in PYTHONPATH for Airflow
 sys.path.append('/opt/airflow/src')
 
-# pylint: disable=wrong-import-position, no-name-in-module
 from ingestion.sales_ingest import SalesIngestor
 from quality.bronze_rules import validate_bronze_quality
 from quality.silver_rules import validate_silver_quality
@@ -82,6 +80,5 @@ with DAG(
     )
 
     # Execution Flow
-    # pylint: disable=pointless-statement
     task_ingestion >> task_bronze_validation >> task_silver_transformation \
         >> task_silver_validation >> task_dbt_run

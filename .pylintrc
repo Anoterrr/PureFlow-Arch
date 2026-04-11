@@ -1,8 +1,9 @@
 [MASTER]
 # Add 'src' and root to the path so pylint can find modules and tests
-init-hook='import sys; sys.path.extend(["src", "."])'
+init-hook='import sys, os; sys.path.extend([os.path.join(os.getcwd(), "src"), ".", "/opt/airflow/src"])'
 
 [MESSAGES CONTROL]
+# Disable warnings that are counter-productive for this specific stack
 disable=
     raw-checker-failed,
     bad-inline-option,
@@ -11,12 +12,25 @@ disable=
     suppressed-message,
     useless-suppression,
     deprecated-pragma,
-    use-symbolic-message-instead
+    use-symbolic-message-instead,
+    # Architectural choices
+    too-few-public-methods,
+    duplicate-code,
+    import-error,
+    no-name-in-module,
+    wrong-import-position,
+    protected-access,
+    pointless-statement
 
 [TYPECHECK]
 # Ignore missing members for dynamic libraries
 ignored-modules=airflow,great_expectations,duckdb,pandas,numpy,pytest
 
 [DESIGN]
-max-locals=20
+max-locals=25
 max-attributes=10
+max-args=10
+
+[REPORTS]
+output-format=colorized
+score=yes

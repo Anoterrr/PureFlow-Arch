@@ -1,5 +1,6 @@
 """Module for validating raw data in Landing Zone using Great Expectations (GX)."""
 import sys
+import duckdb
 
 import great_expectations as gx
 from core.connection import ConnectionFactory
@@ -71,7 +72,6 @@ def _handle_landing_failure(context, conn, source_path, paths):
 
 def move_to_quarantine(conn, source_path, target_path):
     """Moves a file to Quarantine using DuckDB."""
-    import duckdb # Local import to resolve naming or narrow scope if needed
     try:
         conn.execute(
             f"COPY (SELECT * FROM read_csv_auto('{source_path}')) "

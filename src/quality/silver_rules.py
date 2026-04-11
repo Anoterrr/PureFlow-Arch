@@ -7,6 +7,7 @@ from core.config import get_s3_paths
 from core.logger import logger
 from quality.utils import get_gx_context
 
+# pylint: disable=duplicate-code
 def validate_silver_quality():
     """Validates Silver data post-business rules application."""
     paths = get_s3_paths()

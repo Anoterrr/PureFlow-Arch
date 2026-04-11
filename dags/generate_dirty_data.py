@@ -4,7 +4,7 @@ DAG to generate DIRTY synthetic data into the Landing Zone.
 import sys
 from datetime import datetime
 
-# pylint: disable=import-error
+# pylint: disable=import-error, duplicate-code
 from airflow import DAG
 from airflow.operators.python import PythonOperator
 

@@ -7,7 +7,7 @@ from core.config import get_s3_paths
 from core.logger import logger
 from quality.utils import get_gx_context
 
-# pylint: disable=too-many-locals
+# pylint: disable=too-many-locals, duplicate-code
 def validate_bronze_quality():
     """Runs GX validation specifically for the Bronze domain."""
     paths = get_s3_paths()

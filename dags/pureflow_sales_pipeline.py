@@ -6,6 +6,7 @@ import os
 import sys
 from datetime import datetime, timedelta
 
+# pylint: disable=import-error
 from airflow import DAG
 from airflow.operators.bash import BashOperator
 from airflow.operators.python import PythonOperator
@@ -13,11 +14,11 @@ from airflow.operators.python import PythonOperator
 # Ensure src is in PYTHONPATH for Airflow
 sys.path.append('/opt/airflow/src')
 
-# pylint: disable=wrong-import-position, import-error
+# pylint: disable=wrong-import-position, no-name-in-module
 from ingestion.sales_ingest import SalesIngestor
 from quality.bronze_rules import validate_bronze_quality
-from transformations.bronze_to_silver import transform_bronze_to_silver
 from quality.silver_rules import validate_silver_quality
+from transformations.bronze_to_silver import transform_bronze_to_silver
 
 def run_ingestion():
     """Wrapper function to trigger Sales ingestion."""
@@ -68,7 +69,6 @@ with DAG(
     )
 
     # 5. Gold Transformation: Silver -> Gold (using dbt)
-    # Wrap command to avoid line-too-long
     DBT_CMD = 'cd /opt/airflow/dbt && dbt run --profiles-dir .'
     task_dbt_run = BashOperator(
         task_id='dbt_transformation_gold',

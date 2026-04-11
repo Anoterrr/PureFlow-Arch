@@ -10,10 +10,10 @@ jobs:
   quality-gate:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Set up Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: '3.11'
 
@@ -27,21 +27,22 @@ jobs:
 
       # 1. Python Quality
       - name: Run Pylint
-        run: poetry run pylint src/ dags/
+        run: poetry run pylint src/ dags/ tests/
 
+      # 2. Unit Testing
       - name: Run Pytest
         run: poetry run pytest tests/
 
-      # 2. SQL Quality
+      # 3. SQL Quality
       - name: SQLFluff Lint
         run: poetry run sqlfluff lint dbt/models/ --dialect duckdb
 
-      # 3. Docker Quality
+      # 4. Docker Quality
       - name: Hadolint Dockerfile
         uses: hadolint/hadolint-action@v3.1.0
         with:
           dockerfile: dockerfile
 
-      # 4. Security Scan
+      # 5. Security Scan
       - name: Run Bandit (Security)
         run: poetry run bandit -r src/

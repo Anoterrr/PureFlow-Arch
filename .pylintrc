@@ -1,10 +1,8 @@
 [MASTER]
-# Add 'src' to the path so pylint can find local modules
-init-hook='import sys; sys.path.append("src")'
+# Add 'src' and root to the path so pylint can find modules and tests
+init-hook='import sys; sys.path.extend(["src", "."])'
 
 [MESSAGES CONTROL]
-# Disable only the truly unavoidable global warnings if needed, 
-# but we aim for zero disables in code.
 disable=
     raw-checker-failed,
     bad-inline-option,
@@ -17,9 +15,8 @@ disable=
 
 [TYPECHECK]
 # Ignore missing members for dynamic libraries
-ignored-modules=airflow,great_expectations,duckdb,pandas,numpy
+ignored-modules=airflow,great_expectations,duckdb,pandas,numpy,pytest
 
 [DESIGN]
-# Adjusting limits to fit DE patterns without being excessive
 max-locals=20
 max-attributes=10

@@ -1,11 +1,11 @@
 """Domain-specific Validation Rules for Silver (Great Expectations)."""
 import sys
+import great_expectations as gx
 
 from core.connection import ConnectionFactory
 from core.config import get_s3_paths
 from core.logger import logger
 from quality.utils import get_gx_context
-import great_expectations as gx
 
 def validate_silver_quality():
     """Validates Silver data post-business rules application."""

@@ -1,76 +1,93 @@
-# 🌀 PureFlow-Arch: Medallion Lakehouse with Data Gatekeeper
+# PureFlow-Arch: Modern Data Lakehouse
+### Senior Capstone Project (TCC) - Medallion Architecture
 
-**PureFlow-Arch** is a high-performance data engineering platform designed to ensure data integrity and quality in a local Lakehouse environment. The project implements the **Medallion Architecture** pattern (Bronze, Silver, Gold) with an active **Gatekeeper** (Circuit Breaker), utilizing the modern Python ecosystem.
-
----
-
-## 🏗️ Architecture and Data Flow
-
-The project operates in an isolated environment via **Docker** on **Arch WSL**, simulating a real corporate data pipeline. The image below details how the components interact:
-
-![PureFlow-Arch Architecture](docs/pureflow_architecture.png)
-
-### The Flow in Detail:
-
-1.  **Landing Zone (MinIO/S3):** The entry point. Raw files (CSV/JSON) are received via a simulated S3 API provided by MinIO.
-2.  **Ingestion (DuckDB):** DuckDB reads files directly from S3 (via the `httpfs` extension), converting them to **Parquet**.
-3.  **Bronze Layer (Raw):** Efficient storage of Parquet files, maintaining full source fidelity (no transformations).
-4.  **Gatekeeper (Great Expectations):** The trust layer. Validates types, nulls, and business rules. If the data fails the "Expectations", the pipeline is interrupted and the file is moved to `/quarantine`.
-5.  **Silver Layer (Cleansed):** Validated and normalized data, persisted in **Delta Lake** format, ensuring ACID transactions and versioning (Time Travel).
-6.  **Gold Layer (Curated):** Final transformations and business aggregations executed by **dbt**. The final product is materialized into analytical tables within the DuckDB `.db` file, ready for consumption.
+**PureFlow-Arch** is a high-performance, modular data engineering framework designed to demonstrate the "Modern Data Lakehouse" paradigm. It implements a full Medallion Architecture using a containerized stack focused on scalability, data quality, and ACID-like properties in a local environment.
 
 ---
 
-## 🛠️ Technology Stack
+## 🏗️ Architecture Overview
 
-| Component | Technology | Main Role |
-| :--- | :--- | :--- |
-| **Orchestration** | Apache Airflow | Coordinates task scheduling and execution (DAGs). |
-| **Data Engine** | DuckDB | High-performance in-process OLAP processing. |
-| **Transformation** | dbt (duckdb-adapter) | Manages lineage and SQL models. |
-| **Quality** | Great Expectations | Data contract validation (Gatekeeper). |
-| **Storage** | MinIO + Delta Lake | S3-compatible storage and high-performance tables. |
-| **Environment** | Docker + Poetry | Infrastructure isolation and dependency management. |
+The project follows the **Medallion Architecture**, ensuring data evolves through progressive layers of cleanliness and complexity:
+
+1.  **Landing (Raw):** Immutable storage of source files (CSV/JSON) in MinIO.
+2.  **Bronze (Ingested):** Raw data converted to compressed Parquet with technical metadata (`_ingested_at`, `_source_file`).
+3.  **Silver (Filtered & Cleaned):** 
+    *   **Gatekeeper 1:** Great Expectations (GX) validates raw Bronze quality.
+    *   **Business Rules:** Data is filtered and standardized via DuckDB transformations.
+    *   **Gatekeeper 2:** GX validates post-transformation schema and business constraints.
+4.  **Gold (Analytical):** Final materialized summary tables in a local DuckDB file (`pureflow_lakehouse.db`) via dbt-style modeling.
 
 ---
 
-## 🚀 How to Run the Project
+## 🛠️ Tech Stack
 
-### Prerequisites
-* Docker & Docker Compose installed.
-* WSL2 (Environment tested: Arch Linux).
-* Poetry (v2.0+) installed on host (Arch).
+*   **Orchestration:** Apache Airflow (LocalExecutor)
+*   **Storage (S3):** MinIO (Landing, Bronze, Silver buckets)
+*   **Processing Engine:** DuckDB (High-performance OLAP)
+*   **Data Quality:** Great Expectations (GX)
+*   **Transformation Layer:** dbt (DuckDB adapter)
+*   **Environment:** Docker & Poetry (Python 3.11)
 
-### 1. Preparation
-In your Arch WSL terminal, prepare permissions and the environment:
-```bash
-# Create volume and documentation folders
-mkdir -p data/minio_data docs
-touch README.md
-poetry lock
+---
+
+## 📂 Project Structure
+
+```text
+PureFlow-Arch/
+├── dags/                   # Airflow DAGs (Refined Medallion Flow)
+├── dbt/                    # dbt Project for Gold Layer modeling
+├── src/
+│   ├── core/               # Shared connections and logging logic
+│   ├── ingestion/          # Domain-driven ingestion (Sales)
+│   ├── quality/            # Multi-stage GX validation rules
+│   ├── transformations/    # Bronze-to-Silver & Silver-to-Gold logic
+│   └── utils/              # Data generators and helpers
+├── data/                   # Local volumes for MinIO and Gold DB
+└── scripts/                # Infrastructure & permission setup
 ```
 
-### 2. Initialization
-Spin up the services defined in docker-compose.yml:
+---
 
+## 🚀 Getting Started
+
+### 1. Prerequisites
+*   Docker & Docker Compose
+*   (Optional) Poetry for local development
+
+### 2. Setup Permissions (Arch/WSL)
+To ensure the `analyst` user (UID 1000) inside the container can manage the volumes, run:
+```bash
+chmod +x scripts/setup_perms.sh
+./scripts/setup_perms.sh
+```
+
+### 3. Spin up Infrastructure
 ```bash
 docker-compose up -d --build
 ```
 
-### 3. Access the Interfaces
-* Airflow UI: http://localhost:8080 (user: admin / pass: admin)
-* MinIO Console: http://localhost:9001 (configured via STORAGE_USER and STORAGE_PASSWORD in .env)
-* Data Docs (Quality Reports): Located at gx/uncommitted/data_docs/local_site/index.html
+### 4. Trigger the Pipeline
+*   **Airflow UI:** [http://localhost:8080](http://localhost:8080)
+*   Unpause and trigger the `pureflow_sales_pipeline` DAG.
 
 ---
 
-### 🛡️ The Differentiator: Gatekeeper in Action
-Unlike common ETL pipelines, PureFlow-Arch focuses on observability. During execution:
-* If corrupted data (e.g., negative sales value) tries to enter Silver, Great Expectations detects the anomaly.
-* Airflow receives the failure signal and prevents dbt from processing the Gold layer with incorrect data.
-* The data engineer receives an alert and can consult the HTML Data Doc to see exactly which row and column caused the error.
+## 🛡️ Data Quality & Security
+
+*   **Circuit Breaker:** If data fails Great Expectations validation at any stage (Bronze or Silver), the pipeline automatically halts and moves the offending data to a `quarantine/` folder.
+*   **Auditability:** Every row in the lakehouse includes technical metadata for lineage tracking.
+*   **Security-by-Design:** All processes run under a dedicated non-root `analyst` user. Credentials are managed via environment variables and `profiles.yml` jinja templates.
 
 ---
 
-### 📄 License
-This project is under the MIT license. See the LICENSE file for more details.
+## 📊 Monitoring
+
+| Tool | Endpoint |
+| :--- | :--- |
+| **Airflow** | [http://localhost:8080](http://localhost:8080) |
+| **MinIO Console** | [http://localhost:9001](http://localhost:9001) |
+| **GX Data Docs** | `gx/uncommitted/data_docs/local_site/index.html` |
+| **Gold DB** | `data/pureflow_lakehouse.db` |
+
+---
+*Developed as a Senior Capstone Project in Data Engineering.*

@@ -19,9 +19,11 @@ class ConnectionFactory:
         conn.execute("SET memory_limit = '16GB'")  # Reserve half for DuckDB
         conn.execute("SET threads = 4")  # Adjust according to your processor
 
-        # Install extensions to read from MinIO (S3)
+        # Install extensions to read from MinIO (S3) and Delta Lake
         conn.execute("INSTALL httpfs;")
         conn.execute("LOAD httpfs;")
+        conn.execute("INSTALL delta;")
+        conn.execute("LOAD delta;")
 
         return conn
 

@@ -33,9 +33,9 @@ def generate_dirty_big_data():
 
     # 3. Inserting Anomalies
     logger.info("⚠️ Inserting intentional anomalies for quality testing...")
-    df_vendas.loc[0:500, "amount"] = -50.0
+    df_vendas.loc[0:500, "sale_value"] = -50.0
     df_vendas.loc[1000:1500, "customer_id"] = np.nan
-    df_vendas.loc[2000:2100, "amount"] = 99_999_999.0
+    df_vendas.loc[2000:2100, "sale_value"] = 99_999_999.0
 
     df_vendas.to_csv(f"{vendas_path}/vendas.csv", index=False)
     logger.info(f"✅ Dirty Big Data generated successfully in: {vendas_path}")

@@ -28,6 +28,7 @@ services:
     user: "1000:0"
     environment:
       - AIRFLOW_HOME=/opt/airflow/.airflow
+      - AIRFLOW__CORE__DAGS_FOLDER=/opt/airflow/dags
       - AIRFLOW__CORE__EXECUTOR=LocalExecutor
       - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql+psycopg2://${POSTGRES_USER:-airflow}:${POSTGRES_PASSWORD:-airflow}@postgres:5432/${POSTGRES_DB:-airflow}
       - AIRFLOW_UID=1000

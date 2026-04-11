@@ -44,7 +44,8 @@ class SalesIngestor(BaseIngestor):
                     SELECT 
                         *, 
                         now() as _ingested_at,
-                        'sales' as _domain
+                        'sales' as _domain,
+                        '{os.path.basename(landing_csv)}' as _source_file
                     FROM read_csv_auto('{landing_csv}')
                 ) TO '{bronze_parquet}' (FORMAT 'PARQUET')
             """)

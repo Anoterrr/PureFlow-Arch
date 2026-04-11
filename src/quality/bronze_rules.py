@@ -6,8 +6,8 @@ from core.connection import ConnectionFactory
 from core.config import get_s3_paths
 from core.logger import logger
 
-def validate_sales_quality():
-    """Runs GX validation specifically for the Sales domain."""
+def validate_bronze_quality():
+    """Runs GX validation specifically for the Bronze domain."""
     paths = get_s3_paths()
     factory = ConnectionFactory()
     

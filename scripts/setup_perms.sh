@@ -1,0 +1,22 @@
+#!/bin/bash
+# setup_perms.sh: Ensures 'analyst' (UID 1000) owns the data volume.
+# Use this on the host terminal (Arch WSL) if you encounter Permission Denied errors.
+
+set -e
+
+PROJECT_ROOT=$(pwd)
+ANALYST_UID=1000
+
+echo "🛡️ Fixing permissions for PureFlow-Arch (UID $ANALYST_UID)..."
+
+# Ensure data directories exist
+mkdir -p "$PROJECT_ROOT/data/minio_data"
+mkdir -p "$PROJECT_ROOT/data/gold"
+mkdir -p "$PROJECT_ROOT/data/quarantine"
+mkdir -p "$PROJECT_ROOT/gx/uncommitted/data_docs"
+
+# Apply recursive ownership
+sudo chown -R $ANALYST_UID:$ANALYST_UID "$PROJECT_ROOT/data"
+sudo chown -R $ANALYST_UID:$ANALYST_UID "$PROJECT_ROOT/gx/uncommitted"
+
+echo "✅ Permissions synchronized for the analyst user."

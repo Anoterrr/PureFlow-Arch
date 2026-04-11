@@ -23,7 +23,7 @@ def setup_gx_backend(context, datasource_name, factory):
     # This is the only place in the project where we allow this access
     raw_conn = datasource.get_execution_engine()._connection
     factory.setup_s3_auth(raw_conn)
-    
+
     return datasource, raw_conn
 
 def get_or_create_suite(context, suite_name):

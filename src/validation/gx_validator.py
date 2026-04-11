@@ -71,14 +71,16 @@ def _handle_landing_failure(context, conn, source_path, paths):
 
 def move_to_quarantine(conn, source_path, target_path):
     """Moves a file to Quarantine using DuckDB."""
+    import duckdb # Local import to resolve naming or narrow scope if needed
     try:
         conn.execute(
             f"COPY (SELECT * FROM read_csv_auto('{source_path}')) "
             f"TO '{target_path}' (FORMAT 'PARQUET')"
         )
         logger.info("📥 Data moved to quarantine: %s", target_path)
-    except Exception as err:
+    except duckdb.Error as err:
         logger.error("Error during quarantine move: %s", err)
+
 
 if __name__ == "__main__":
     validate_landing_data()

@@ -5,33 +5,51 @@ import great_expectations as gx
 from core.connection import ConnectionFactory
 from core.config import get_s3_paths
 from core.logger import logger
-from quality.utils import get_gx_context
+from quality.utils import get_gx_context, setup_gx_backend, get_or_create_suite
 
-# pylint: disable=too-many-locals, duplicate-code
 def validate_landing_data():
     """Validates raw data in the Landing Zone and moves to Quarantine."""
     paths = get_s3_paths()
     factory = ConnectionFactory()
     context = get_gx_context()
 
-    datasource_name = "landing_datasource"
-    try:
-        datasource = context.get_datasource(datasource_name)
-    except (ValueError, KeyError):
-        datasource = context.sources.add_duckdb(name=datasource_name)
-
-    # pylint: disable=protected-access
-    raw_conn = datasource.get_execution_engine()._connection
-    factory.setup_s3_auth(raw_conn)
+    datasource, raw_conn = setup_gx_backend(
+        context, "landing_datasource", factory
+    )
 
     logger.info("🛡️ Starting Data Gatekeeper (Great Expectations)...")
 
-    suite_name = "vendas_landing_suite"
-    try:
-        suite = context.get_expectation_suite(suite_name)
-    except (ValueError, KeyError):
-        suite = context.add_expectation_suite(expectation_suite_name=suite_name)
+    suite = get_or_create_suite(context, "vendas_landing_suite")
+    _add_landing_expectations(suite)
 
+    vendas_landing_path = paths['vendas_landing']
+    try:
+        asset = datasource.get_asset("vendas_landing_asset")
+    except (ValueError, KeyError):
+        asset = datasource.add_query_asset(
+            name="vendas_landing_asset",
+            query=f"SELECT * FROM read_csv_auto('{vendas_landing_path}')"
+        )
+
+    checkpoint = context.add_or_update_checkpoint(
+        name="landing_vendas_checkpoint",
+        validations=[{
+            "batch_request": asset.build_batch_request(),
+            "expectation_suite_name": "vendas_landing_suite",
+        }],
+    )
+
+    logger.info("🔍 Running validation for: %s", vendas_landing_path)
+    checkpoint_result = checkpoint.run()
+
+    if not checkpoint_result.success:
+        _handle_landing_failure(context, raw_conn, vendas_landing_path, paths)
+
+    logger.info("✅ Landing data validated successfully!")
+    context.build_data_docs()
+
+def _add_landing_expectations(suite):
+    """Expectations for raw landing data."""
     suite.add_expectation(
         gx.expectations.ExpectColumnValuesToNotBeNull(column="id")
     )
@@ -42,38 +60,14 @@ def validate_landing_data():
         column="sale_date", strftime_format="%Y-%m-%d"
     ))
 
-    vendas_landing_path = paths['vendas_landing']
-    asset_name = "vendas_landing_asset"
-    try:
-        asset = datasource.get_asset(asset_name)
-    except (ValueError, KeyError):
-        asset = datasource.add_query_asset(
-            name=asset_name,
-            query=f"SELECT * FROM read_csv_auto('{vendas_landing_path}')"
-        )
-
-    checkpoint = context.add_or_update_checkpoint(
-        name="landing_vendas_checkpoint",
-        validations=[{
-            "batch_request": asset.build_batch_request(),
-            "expectation_suite_name": suite_name,
-        }],
-    )
-
-    logger.info("🔍 Running validation for: %s", vendas_landing_path)
-    checkpoint_result = checkpoint.run()
-
-    if not checkpoint_result.success:
-        logger.error("❌ Validation FAILED! Quarantining data...")
-        context.build_data_docs()
-        quarantine_path = paths['vendas_quarantine']
-        move_to_quarantine(raw_conn, vendas_landing_path, quarantine_path)
-        logger.error("🛑 Pipeline stopped due to quality issues.")
-        sys.exit(1)
-
-    logger.info("✅ Landing data validated successfully!")
+def _handle_landing_failure(context, conn, source_path, paths):
+    """Handles landing validation failure by quarantining."""
+    logger.error("❌ Validation FAILED! Quarantining data...")
     context.build_data_docs()
-
+    quarantine_path = paths['vendas_quarantine']
+    move_to_quarantine(conn, source_path, quarantine_path)
+    logger.error("🛑 Pipeline stopped due to quality issues.")
+    sys.exit(1)
 
 def move_to_quarantine(conn, source_path, target_path):
     """Moves a file to Quarantine using DuckDB."""
@@ -83,9 +77,8 @@ def move_to_quarantine(conn, source_path, target_path):
             f"TO '{target_path}' (FORMAT 'PARQUET')"
         )
         logger.info("📥 Data moved to quarantine: %s", target_path)
-    except Exception as err:  # pylint: disable=broad-exception-caught
+    except Exception as err:
         logger.error("Error during quarantine move: %s", err)
-
 
 if __name__ == "__main__":
     validate_landing_data()

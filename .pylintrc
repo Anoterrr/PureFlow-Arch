@@ -1,0 +1,25 @@
+[MASTER]
+# Add 'src' to the path so pylint can find local modules
+init-hook='import sys; sys.path.append("src")'
+
+[MESSAGES CONTROL]
+# Disable only the truly unavoidable global warnings if needed, 
+# but we aim for zero disables in code.
+disable=
+    raw-checker-failed,
+    bad-inline-option,
+    locally-disabled,
+    file-ignored,
+    suppressed-message,
+    useless-suppression,
+    deprecated-pragma,
+    use-symbolic-message-instead
+
+[TYPECHECK]
+# Ignore missing members for dynamic libraries
+ignored-modules=airflow,great_expectations,duckdb,pandas,numpy
+
+[DESIGN]
+# Adjusting limits to fit DE patterns without being excessive
+max-locals=20
+max-attributes=10

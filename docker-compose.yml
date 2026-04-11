@@ -33,7 +33,7 @@ services:
       - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql+psycopg2://${POSTGRES_USER:-airflow}:${POSTGRES_PASSWORD:-airflow}@postgres:5432/${POSTGRES_DB:-airflow}
       - AIRFLOW_UID=1000
       - PYTHONPATH=/opt/airflow/src
-      - _PIP_ADDITIONAL_REQUIREMENTS=duckdb dbt-duckdb great-expectations pandas deltalake python-dotenv
+      - _PIP_ADDITIONAL_REQUIREMENTS=duckdb dbt-duckdb great-expectations pandas>=2.2.2 numpy<2.0.0 deltalake python-dotenv
     volumes:
       - .:/opt/airflow
     ports:

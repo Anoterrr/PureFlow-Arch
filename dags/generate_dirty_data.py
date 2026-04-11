@@ -2,14 +2,16 @@
 DAG to generate DIRTY synthetic data into the Landing Zone.
 """
 import sys
-from datetime import datetime, timedelta
+from datetime import datetime
+
+# pylint: disable=import-error
 from airflow import DAG
 from airflow.operators.python import PythonOperator
 
 # Ensure src is in PYTHONPATH
 sys.path.append('/opt/airflow/src')
 
-# pylint: disable=wrong-import-position, import-error
+# pylint: disable=wrong-import-position, no-name-in-module
 from utils.generate_dirty_data import generate_dirty_big_data
 
 DEFAULT_ARGS = {
@@ -33,4 +35,5 @@ with DAG(
         python_callable=generate_dirty_big_data,
     )
 
+    # pylint: disable=pointless-statement
     task_gen_dirty

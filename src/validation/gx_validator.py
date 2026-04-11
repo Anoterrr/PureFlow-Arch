@@ -1,5 +1,4 @@
 """Module for validating raw data in Landing Zone using Great Expectations (GX)."""
-import os
 import sys
 
 import great_expectations as gx
@@ -8,7 +7,7 @@ from core.config import get_s3_paths
 from core.logger import logger
 from quality.utils import get_gx_context
 
-# pylint: disable=too-many-locals
+# pylint: disable=too-many-locals, duplicate-code
 def validate_landing_data():
     """Validates raw data in the Landing Zone and moves to Quarantine."""
     paths = get_s3_paths()

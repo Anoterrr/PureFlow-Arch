@@ -15,7 +15,11 @@ dependencies = [
     "pandas>=2.1.0",
     "boto3>=1.34.0",
     "python-dotenv>=1.0.0",
-    "dbt-duckdb>=1.7.0"
+    "dbt-duckdb>=1.7.0",
+    "pytest>=8.0.0",
+    "sqlfluff>=3.0.0",
+    "sqlfluff-templater-dbt>=3.0.0",
+    "bandit>=1.7.0"
 ]
 
 [tool.poetry]

@@ -1,0 +1,19 @@
+[sqlfluff]
+templater = dbt
+dialect = duckdb
+run_away_limit = 10
+max_line_length = 80
+indent_unit = space
+
+[sqlfluff:templater:dbt]
+project_dir = ./dbt
+profiles_dir = ./dbt
+
+[sqlfluff:indentation]
+tab_width = 4
+
+[sqlfluff:rules:capitalisation.keywords]
+capitalisation_policy = upper
+
+[sqlfluff:rules:capitalisation.identifiers]
+capitalisation_policy = lower

@@ -16,7 +16,7 @@ def ingest_to_bronze():
     logger.info("🚀 Starting Ingestion: Landing Zone (S3) -> Bronze (S3)...")
 
     # 1. Ingest erp_vendas (CSV)
-    logger.info(f"📥 Ingesting Vendas: {paths['vendas_landing']}")
+    logger.info("📥 Ingesting Vendas: %s", paths['vendas_landing'])
     conn.execute(
         f"""
         COPY (SELECT *, now() as ingested_at FROM read_csv_auto('{paths['vendas_landing']}'))
@@ -25,7 +25,7 @@ def ingest_to_bronze():
     )
 
     # 2. Ingest crm_clientes (JSON)
-    logger.info(f"📥 Ingesting Clientes: {paths['clientes_landing']}")
+    logger.info("📥 Ingesting Clientes: %s", paths['clientes_landing'])
     conn.execute(
         f"""
         COPY (SELECT *, now() as ingested_at FROM read_json_auto('{paths['clientes_landing']}'))

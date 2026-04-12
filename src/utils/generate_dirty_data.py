@@ -1,11 +1,12 @@
 """Module for generating synthetic big data with intentional anomalies."""
-import pandas as pd
-import numpy as np
 
-from core.config import get_paths, BASE_DATE
+import numpy as np
+import pandas as pd
+
+from core.config import BASE_DATE, get_paths
 from core.logger import logger
-from utils.generators import generate_base_customers, generate_base_vendas
 from ingestion.upload_to_landing import upload_to_landing
+from utils.generators import generate_base_customers, generate_base_vendas
 
 
 def generate_dirty_big_data():
@@ -21,7 +22,7 @@ def generate_dirty_big_data():
     df_customers = pd.DataFrame(customers)
     local_clientes = f"{clientes_path}/clientes.json"
     df_customers.to_json(local_clientes, orient="records", lines=True)
-    
+
     # Official Ingestion call
     upload_to_landing(local_clientes, f"crm_clientes/dt={BASE_DATE}/clientes.json")
 
@@ -33,7 +34,7 @@ def generate_dirty_big_data():
         n_customers=n_customers,
         amount_range=(5.0, 2000.0),
         base_date=BASE_DATE,
-        customer_id_offset=500
+        customer_id_offset=500,
     )
     df_vendas = pd.DataFrame(vendas)
 
@@ -45,10 +46,10 @@ def generate_dirty_big_data():
 
     local_vendas = f"{vendas_path}/vendas.csv"
     df_vendas.to_csv(local_vendas, index=False)
-    
+
     # Official Ingestion call
     upload_to_landing(local_vendas, f"erp_vendas/dt={BASE_DATE}/vendas.csv")
-    
+
     logger.info("✅ Dirty Big Data generated and indexed successfully!")
 
 

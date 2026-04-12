@@ -75,7 +75,7 @@ with DAG(
             **os.environ,
             'S3_ENDPOINT': os.getenv('S3_ENDPOINT', 'minio:9000'),
             'STORAGE_USER': os.getenv('STORAGE_USER', 'admin'),
-            'STORAGE_PASSWORD': os.getenv('STORAGE_PASSWORD', 'password123'),
+            'STORAGE_PASSWORD': os.getenv('STORAGE_PASSWORD', 'strongpassword123'),
         }
     )
 

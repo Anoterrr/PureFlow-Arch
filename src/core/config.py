@@ -2,7 +2,7 @@
 import os
 
 # Local paths for development/generation
-BASE_LANDING_ZONE = "data/minio_data/landing-zone"
+BASE_LANDING_ZONE = "data/raw"
 BASE_DATE = "2024-03-29"
 
 # S3 / MinIO Configuration

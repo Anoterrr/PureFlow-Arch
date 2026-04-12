@@ -17,7 +17,7 @@ def setup_gx_backend(context, datasource_name, factory):
     """
     s3_endpoint = os.getenv("S3_ENDPOINT", "http://localhost:9000").replace("http://", "")
     storage_user = os.getenv("STORAGE_USER", "admin")
-    storage_password = os.getenv("STORAGE_PASSWORD", "password123")
+    storage_password = os.getenv("STORAGE_PASSWORD", "strongpassword123")
 
     try:
         datasource = context.data_sources.get(datasource_name)

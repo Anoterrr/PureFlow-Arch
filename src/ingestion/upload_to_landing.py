@@ -6,15 +6,33 @@ import os
 import boto3
 from botocore.exceptions import ClientError
 from core.logger import logger
-from core.connection import ConnectionFactory
 from dotenv import load_dotenv
 
+# Load .env but we will be careful with its values
 load_dotenv()
 
-# Configuration - Credentials from environment variables as requested
-S3_ENDPOINT = os.getenv("S3_ENDPOINT", "http://localhost:9000")
+def get_config():
+    """Dynamically determines the correct endpoint based on the environment."""
+    
+    # 1. Check if we are inside a container first
+    is_container = os.path.exists("/.dockerenv") or os.getenv("AIRFLOW_HOME") is not None
+    
+    env_endpoint = os.getenv("S3_ENDPOINT")
+    
+    # If we are in a container and S3_ENDPOINT is either unset or set to localhost,
+    # we MUST use the container hostname 'minio'.
+    if is_container:
+        if not env_endpoint or "localhost" in env_endpoint or "127.0.0.1" in env_endpoint:
+            logger.info("📦 Container detected: Routing S3 traffic to 'http://minio:9000'")
+            return "http://minio:9000"
+        return env_endpoint
+    
+    # 2. Outside container: Use .env or default to localhost
+    return env_endpoint if env_endpoint else "http://localhost:9000"
+
+S3_ENDPOINT = get_config()
 S3_ACCESS_KEY = os.getenv("STORAGE_USER", "admin")
-S3_SECRET_KEY = os.getenv("STORAGE_PASSWORD", "password123")
+S3_SECRET_KEY = os.getenv("STORAGE_PASSWORD", "strongpassword123")
 S3_BUCKET = "landing-zone"
 USER_CONTEXT = "analyst"
 
@@ -26,29 +44,39 @@ def get_s3_client():
         aws_access_key_id=S3_ACCESS_KEY,
         aws_secret_access_key=S3_SECRET_KEY,
         use_ssl=False,
-        config=boto3.session.Config(signature_version="s3v4")
+        config=boto3.session.Config(
+            signature_version="s3v4",
+            s3={'addressing_style': 'path'}
+        )
     )
+
+def ensure_bucket_exists(s3_client, bucket_name):
+    """Checks if bucket exists, creates it if it doesn't."""
+    try:
+        s3_client.head_bucket(Bucket=bucket_name)
+    except Exception:
+        try:
+            logger.info("🪣 Bucket '%s' not found. Creating...", bucket_name)
+            s3_client.create_bucket(Bucket=bucket_name)
+        except Exception as e:
+            logger.warning("Could not create bucket (it might already exist): %s", str(e))
 
 def upload_to_landing(local_file_path: str, target_key: str):
     """
     Uploads a file to the landing zone bucket with metadata for traceability.
-    
-    Args:
-        local_file_path: Absolute or relative path to the local source file.
-        target_key: The destination path (key) within the 'landing-zone' bucket.
     """
     s3_client = get_s3_client()
     
-    # Production-standard: Check local existence before attempting upload
     if not os.path.isfile(local_file_path):
         logger.error("Local file not found: %s", local_file_path)
         return False
 
     try:
-        logger.info("🚀 Initiating upload: %s -> s3://%s/%s", 
+        ensure_bucket_exists(s3_client, S3_BUCKET)
+
+        logger.info("🚀 Uploading: %s -> s3://%s/%s", 
                     local_file_path, S3_BUCKET, target_key)
         
-        # Upload with analyst context metadata to satisfy Task 1 requirement
         s3_client.upload_file(
             local_file_path,
             S3_BUCKET,
@@ -56,30 +84,17 @@ def upload_to_landing(local_file_path: str, target_key: str):
             ExtraArgs={
                 "Metadata": {
                     "uploaded_by": USER_CONTEXT,
-                    "ingestion_method": "official_upload_script",
-                    "source_system": "local_raw_ingestion"
+                    "ingestion_method": "official_upload_script"
                 }
             }
         )
-        logger.info("✔️ Upload successful! File indexed in MinIO metadata layer.")
+        logger.info("✔️ Success! File visible in MinIO UI.")
         return True
 
-    except ClientError as e:
-        logger.error("❌ S3 Client Error during upload: %s", e)
-        return False
     except Exception as e:
-        logger.error("❌ Unexpected error: %s", e)
-        return False
+        logger.error("❌ MinIO Upload Error (Endpoint: %s): %s", S3_ENDPOINT, str(e))
+        raise  # Re-raise the exception to fail the calling task
 
 if __name__ == "__main__":
-    # Ensure local directory exists for testing/operation
     os.makedirs("data/raw", exist_ok=True)
-    
-    # Example execution based on Task 1 requirements
-    sample_source = "data/raw/vendas.csv"
-    sample_target = "erp-sales/vendas.csv"
-    
-    if os.path.exists(sample_source):
-        upload_to_landing(sample_source, sample_target)
-    else:
-        logger.warning("No file found at %s. Please place data there to ingest.", sample_source)
+    upload_to_landing("data/raw/vendas.csv", "erp-sales/vendas.csv")

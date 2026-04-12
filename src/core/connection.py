@@ -32,7 +32,7 @@ class ConnectionFactory:
         """Configures credentials for DuckDB to see MinIO."""
         s3_endpoint = os.getenv("S3_ENDPOINT", "http://localhost:9000")
         storage_user = os.getenv("STORAGE_USER", "admin")
-        storage_password = os.getenv("STORAGE_PASSWORD", "password123")
+        storage_password = os.getenv("STORAGE_PASSWORD", "strongpassword123")
 
         conn.execute(f"SET s3_endpoint = '{s3_endpoint.replace('http://', '')}'")
         conn.execute(f"SET s3_access_key_id = '{storage_user}'")

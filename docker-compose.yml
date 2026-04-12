@@ -34,6 +34,9 @@ services:
       - AIRFLOW_UID=1000
       - PYTHONPATH=/opt/airflow/src
       - _PIP_ADDITIONAL_REQUIREMENTS=duckdb dbt-duckdb great-expectations pandas>=2.2.2 numpy<2.0.0 deltalake python-dotenv
+      - STORAGE_USER=${STORAGE_USER}
+      - STORAGE_PASSWORD=${STORAGE_PASSWORD}
+      - S3_ENDPOINT=http://minio:9000
     volumes:
       - .:/opt/airflow
     ports:

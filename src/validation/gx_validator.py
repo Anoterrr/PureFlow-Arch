@@ -1,16 +1,18 @@
 """Module for validating raw data in Landing Zone using Great Expectations (GX)."""
 import sys
+import os
 import duckdb
 
 import great_expectations as gx
 from core.connection import ConnectionFactory
-from core.config import get_s3_paths
+from core.config import get_s3_paths, get_paths
 from core.logger import logger
 from quality.utils import get_gx_context, setup_gx_backend, get_or_create_suite
 
 def validate_landing_data():
     """Validates raw data in the Landing Zone and moves to Quarantine."""
-    paths = get_s3_paths()
+    s3_paths = get_s3_paths()
+    local_paths = get_paths() # Get local filesystem paths
     factory = ConnectionFactory()
     context = get_gx_context()
 
@@ -23,28 +25,53 @@ def validate_landing_data():
     suite = get_or_create_suite(context, "vendas_landing_suite")
     _add_landing_expectations(suite)
 
-    vendas_landing_path = paths['vendas_landing']
-    try:
-        asset = datasource.get_asset("vendas_landing_asset")
-    except (ValueError, KeyError):
-        asset = datasource.add_query_asset(
-            name="vendas_landing_asset",
-            query=f"SELECT * FROM read_csv_auto('{vendas_landing_path}')"
-        )
+    # Use local path for validation to avoid S3 credential issues in the container
+    # The container mounts the project root at /app, so path is relative to /app
+    vendas_landing_path = f"{local_paths[0]}/vendas.csv"
+    
+    logger.info("🔍 Local path for validation: %s", vendas_landing_path)
 
-    checkpoint = context.add_or_update_checkpoint(
-        name="landing_vendas_checkpoint",
-        validations=[{
-            "batch_request": asset.build_batch_request(),
-            "expectation_suite_name": "vendas_landing_suite",
-        }],
+    asset_name = "vendas_landing_asset"
+    # Delete old asset if it exists to force update the query
+    try:
+        datasource.delete_asset(asset_name)
+    except Exception:
+        pass
+
+    asset = datasource.add_query_asset(
+        name=asset_name,
+        query=f"SELECT * FROM read_csv_auto('{vendas_landing_path}')"
+    )
+
+    # In GX 1.x, we use ValidationDefinitions
+    batch_def_name = "vendas_batch_def"
+    try:
+        batch_definition = asset.get_batch_definition(batch_def_name)
+    except (ValueError, KeyError, LookupError):
+        batch_definition = asset.add_batch_definition_whole_table(batch_def_name)
+    
+    validation_def_name = "vendas_landing_validation"
+    # Delete old validation definition to ensure it uses the new batch definition
+    try:
+        context.validation_definitions.delete(validation_def_name)
+    except Exception:
+        pass
+
+    from great_expectations.core.validation_definition import ValidationDefinition
+    validation_def = context.validation_definitions.add(
+        ValidationDefinition(
+            name=validation_def_name,
+            data=batch_definition,
+            suite=suite
+        )
     )
 
     logger.info("🔍 Running validation for: %s", vendas_landing_path)
-    checkpoint_result = checkpoint.run()
+    # Run validation directly using the validation definition
+    validation_result = validation_def.run()
 
-    if not checkpoint_result.success:
-        _handle_landing_failure(context, raw_conn, vendas_landing_path, paths)
+    if not validation_result.success:
+        _handle_landing_failure(context, raw_conn, vendas_landing_path, s3_paths)
 
     logger.info("✅ Landing data validated successfully!")
     context.build_data_docs()

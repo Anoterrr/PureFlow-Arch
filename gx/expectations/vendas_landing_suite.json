@@ -1,0 +1,39 @@
+{
+  "expectations": [
+    {
+      "id": "9d649460-04e7-4449-bc9f-9ca6fc9ccae4",
+      "kwargs": {
+        "column": "id"
+      },
+      "meta": {},
+      "severity": "critical",
+      "type": "expect_column_values_to_not_be_null"
+    },
+    {
+      "id": "88bbcd97-7aa0-4429-b31b-733beee77159",
+      "kwargs": {
+        "column": "sale_value",
+        "min_value": 0.01
+      },
+      "meta": {},
+      "severity": "critical",
+      "type": "expect_column_values_to_be_between"
+    },
+    {
+      "id": "bfce59ab-d9c0-4111-b5de-8c308da6e688",
+      "kwargs": {
+        "column": "sale_date",
+        "strftime_format": "%Y-%m-%d"
+      },
+      "meta": {},
+      "severity": "critical",
+      "type": "expect_column_values_to_match_strftime_format"
+    }
+  ],
+  "id": "d7a8b0d4-2c8b-4f74-b1b4-fd961e3fd884",
+  "meta": {
+    "great_expectations_version": "1.15.1"
+  },
+  "name": "vendas_landing_suite",
+  "notes": null
+}

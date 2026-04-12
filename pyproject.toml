@@ -20,7 +20,10 @@ dependencies = [
     "pytest>=8.0.0",
     "sqlfluff>=3.0.0",
     "sqlfluff-templater-dbt>=3.0.0",
-    "bandit>=1.7.0"
+    "bandit>=1.7.0",
+    "pylint>=3.0.0",
+    "sqlalchemy>=2.0.0",
+    "duckdb-engine>=0.11.0"
 ]
 
 [tool.poetry]

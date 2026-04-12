@@ -5,10 +5,11 @@ import numpy as np
 from core.config import get_paths, BASE_DATE
 from core.logger import logger
 from utils.generators import generate_base_customers, generate_base_vendas
+from ingestion.upload_to_landing import upload_to_landing
 
 
 def generate_dirty_big_data():
-    """Generates partitioned sales and customer data with anomalies."""
+    """Generates partitioned sales and customer data with anomalies and uploads to MinIO."""
     # Configuration and directory creation
     vendas_path, clientes_path = get_paths()
 
@@ -18,8 +19,11 @@ def generate_dirty_big_data():
     customers = generate_base_customers(n_customers)
 
     df_customers = pd.DataFrame(customers)
-    df_customers.to_json(f"{clientes_path}/clientes.json",
-                         orient="records", lines=True)
+    local_clientes = f"{clientes_path}/clientes.json"
+    df_customers.to_json(local_clientes, orient="records", lines=True)
+    
+    # Official Ingestion call
+    upload_to_landing(local_clientes, f"crm_clientes/dt={BASE_DATE}/clientes.json")
 
     # 2. Generate erp_vendas (~1M rows)
     n_vendas = 1_000_000
@@ -39,8 +43,13 @@ def generate_dirty_big_data():
     df_vendas.loc[1000:1500, "customer_id"] = np.nan
     df_vendas.loc[2000:2100, "sale_value"] = 99_999_999.0
 
-    df_vendas.to_csv(f"{vendas_path}/vendas.csv", index=False)
-    logger.info("✅ Dirty Big Data generated successfully in: %s", vendas_path)
+    local_vendas = f"{vendas_path}/vendas.csv"
+    df_vendas.to_csv(local_vendas, index=False)
+    
+    # Official Ingestion call
+    upload_to_landing(local_vendas, f"erp_vendas/dt={BASE_DATE}/vendas.csv")
+    
+    logger.info("✅ Dirty Big Data generated and indexed successfully!")
 
 
 if __name__ == "__main__":

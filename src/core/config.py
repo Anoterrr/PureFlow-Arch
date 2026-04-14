@@ -1,15 +1,17 @@
 """Shared configuration for data generation and ingestion."""
 import os
+from datetime import datetime
 
 # Local paths for development/generation
 BASE_LANDING_ZONE = "data/raw"
-BASE_DATE = "2024-03-29"
+# Default date set to today if not provided
+BASE_DATE = os.getenv("EXECUTION_DATE", datetime.now().strftime("%Y-%m-%d"))
 
 # S3 / MinIO Configuration
-S3_BUCKET_LANDING = "landing-zone"
-S3_BUCKET_BRONZE = "bronze"
-S3_BUCKET_SILVER = "silver"
-S3_BUCKET_QUARANTINE = "quarantine"
+S3_BUCKET_LANDING = os.getenv("S3_BUCKET_LANDING", "landing-zone")
+S3_BUCKET_BRONZE = os.getenv("S3_BUCKET_BRONZE", "bronze")
+S3_BUCKET_SILVER = os.getenv("S3_BUCKET_SILVER", "silver")
+S3_BUCKET_QUARANTINE = os.getenv("S3_BUCKET_QUARANTINE", "quarantine")
 
 
 def get_paths(base_date=BASE_DATE):

@@ -1,6 +1,7 @@
 """Domain-specific Validation Rules for Silver (Great Expectations)."""
 import sys
 import great_expectations as gx
+from great_expectations.core.validation_definition import ValidationDefinition
 
 from core.connection import ConnectionFactory
 from core.config import get_s3_paths
@@ -25,21 +26,34 @@ def validate_silver_quality():
     silver_vendas_path = paths['vendas_silver']
     try:
         asset = datasource.get_asset("sales_silver_asset")
-    except (ValueError, KeyError):
+    except (ValueError, KeyError, LookupError):
         asset = datasource.add_query_asset(
             name="sales_silver_asset",
             query=f"SELECT * FROM read_parquet('{silver_vendas_path}/*.parquet')"
         )
 
-    checkpoint = context.add_or_update_checkpoint(
-        name="silver_checkpoint",
-        validations=[{
-            "batch_request": asset.build_batch_request(),
-            "expectation_suite_name": "silver_quality_suite"
-        }],
+    # In GX 1.x, we use ValidationDefinitions
+    batch_def_name = "sales_silver_batch_def"
+    try:
+        batch_definition = asset.get_batch_definition(batch_def_name)
+    except (ValueError, KeyError, LookupError):
+        batch_definition = asset.add_batch_definition_whole_table(batch_def_name)
+    
+    validation_def_name = "sales_silver_validation"
+    try:
+        context.validation_definitions.delete(validation_def_name)
+    except Exception:
+        pass
+
+    validation_def = context.validation_definitions.add(
+        ValidationDefinition(
+            name=validation_def_name,
+            data=batch_definition,
+            suite=suite
+        )
     )
 
-    result = checkpoint.run()
+    result = validation_def.run()
 
     if not result.success:
         logger.error("❌ [Silver Quality] Validation failed! Stopping.")

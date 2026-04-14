@@ -1,0 +1,19 @@
+pipeline_name: "generate_dirty_landing_data"
+description: "Generates 1M rows with INTENTIONAL ANOMALIES in Landing Zone"
+schedule: null
+tags:
+  - "utils"
+  - "data_gen"
+  - "dirty"
+
+default_args:
+  owner: "analyst"
+  retries: 0
+  start_date: "2024-03-29"
+
+tasks:
+  - id: "generate_dirty_data"
+    type: "python"
+    python_callable: "utils.generate_dirty_data.generate_dirty_big_data"
+
+dependencies: []

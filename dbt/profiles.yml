@@ -2,7 +2,7 @@ pureflow:
   outputs:
     dev:
       type: duckdb
-      path: "../data/pureflow_lakehouse.db"
+      path: "../data/gold/pureflow_lakehouse.db"
       schema: gold
       # Extension and MinIO S3 configurations for DuckDB
       extensions:

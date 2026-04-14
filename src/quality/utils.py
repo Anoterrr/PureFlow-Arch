@@ -2,6 +2,7 @@
 import os
 import great_expectations as gx
 from sqlalchemy import text, event
+from core.logger import logger
 
 def get_gx_context():
     """Initializes and returns the GX context in the 'gx' directory."""
@@ -32,6 +33,7 @@ def setup_gx_backend(context, datasource_name, factory):
     # Use SQLAlchemy events to ensure every connection has S3 configured
     @event.listens_for(engine, "connect")
     def receive_connect(dbapi_connection, connection_record):
+        logger.info("🔧 Configuring DuckDB S3 connection via SQLAlchemy event...")
         cursor = dbapi_connection.cursor()
         cursor.execute("INSTALL httpfs; LOAD httpfs;")
         cursor.execute(f"SET s3_endpoint = '{s3_endpoint}';")
@@ -44,10 +46,8 @@ def setup_gx_backend(context, datasource_name, factory):
     # Apply once to current connections if any
     with engine.connect() as conn:
         conn.execute(text("SELECT 1"))
-        conn.commit()
 
-    raw_conn = engine.raw_connection().dbapi_connection
-    return datasource, raw_conn
+    return datasource
 
 def get_or_create_suite(context, suite_name):
     """Abstraction for suite management."""

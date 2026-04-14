@@ -1,7 +1,6 @@
 """Main orchestrator for the PureFlow-Arch pipeline."""
 from ingestion.ingestion import ingest_to_bronze
 from validation.gx_validator import validate_landing_data
-from transformations.silver_to_gold import silver_to_gold_transformation
 from core.connection import ConnectionFactory
 from core.config import get_s3_paths
 from core.logger import logger
@@ -22,10 +21,6 @@ def run_full_pipeline():
     # 3. Silver Layer promotion
     logger.info("Step 3: Promoting Bronze to Silver Layer (Delta Lake)...")
     promote_to_silver()
-
-    # 4. Gold Layer transformation
-    logger.info("Step 4: Transforming Silver to Gold Layer (DuckDB)...")
-    silver_to_gold_transformation()
 
     logger.info("✨ PureFlow-Arch Pipeline completed successfully!")
 

@@ -1,0 +1,39 @@
+{
+  "expectations": [
+    {
+      "id": "37ce3a62-3b0c-4937-93ee-741dcc576caa",
+      "kwargs": {
+        "column": "id"
+      },
+      "meta": {},
+      "severity": "critical",
+      "type": "expect_column_values_to_not_be_null"
+    },
+    {
+      "id": "1396b40d-f00f-4e66-9feb-7c4bfbecf3a4",
+      "kwargs": {
+        "column": "sale_value",
+        "min_value": 0.0
+      },
+      "meta": {},
+      "severity": "critical",
+      "type": "expect_column_values_to_be_between"
+    },
+    {
+      "id": "fe4e9b35-1124-4645-beda-a0ed973917dc",
+      "kwargs": {
+        "column": "sale_date",
+        "strftime_format": "%Y-%m-%d"
+      },
+      "meta": {},
+      "severity": "critical",
+      "type": "expect_column_values_to_match_strftime_format"
+    }
+  ],
+  "id": "c81dd04b-4215-4d9f-b27c-4719c7279e49",
+  "meta": {
+    "great_expectations_version": "1.16.0"
+  },
+  "name": "sales_quality_suite",
+  "notes": null
+}

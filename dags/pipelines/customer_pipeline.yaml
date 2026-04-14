@@ -1,0 +1,35 @@
+pipeline_name: "pureflow_customer_pipeline"
+description: "Customer Medallion Pipeline (YAML Configured)"
+schedule: null
+tags:
+  - "customer"
+  - "medallion"
+  - "yaml_factory"
+
+default_args:
+  owner: "analyst"
+  retries: 1
+  retry_delay_minutes: 2
+  start_date: "2024-03-29"
+
+tasks:
+  - id: "customer_ingestion"
+    type: "python"
+    python_callable: "ingestion.ingestion.ingest_to_bronze"
+  
+  - id: "bronze_quality_validation"
+    type: "python"
+    python_callable: "quality.customer_rules.validate_customer_bronze_quality"
+
+  - id: "silver_promotion"
+    type: "python"
+    python_callable: "main.promote_to_silver"
+
+  - id: "silver_quality_validation"
+    type: "python"
+    python_callable: "quality.customer_rules.validate_customer_silver_quality"
+
+dependencies:
+  - "customer_ingestion >> bronze_quality_validation"
+  - "bronze_quality_validation >> silver_promotion"
+  - "silver_promotion >> silver_quality_validation"

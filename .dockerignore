@@ -1,0 +1,24 @@
+# Ignorar dados e volumes
+data/
+.airflow/
+logs/
+dbt/logs/
+dbt/target/
+
+# Ignorar Python
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+ENV/
+
+# Ignorar Git e IDEs
+.git/
+.vscode/
+.idea/
+
+# Ignorar Docker
+docker-compose.yml
+dockerfile
+.env

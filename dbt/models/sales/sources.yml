@@ -2,11 +2,10 @@ version: 2
 
 sources:
   - name: silver
-    schema: main
+    description: "Camada Silver (Delta Lake) com dados limpos e regras de negócio aplicadas."
     tables:
       - name: vendas
-        external_location: "s3://silver/erp_vendas/dt=2024-03-29/"
-        # We use delta_scan in DuckDB, dbt-duckdb handles this via 'external_location'
-        # Or we can use direct SQL in models.
+        description: "Vendas processadas e auditadas."
+        # O dbt-duckdb lerá via delta_scan() se usarmos a configuração correta no profile ou model
       - name: clientes
-        external_location: "s3://silver/crm_clientes/dt=2024-03-29/"
+        description: "Clientes com dados higienizados."

@@ -1,14 +1,14 @@
 {{ config(materialized='table') }}
 
+{% set base_date = var('execution_date', '2024-03-29') %}
+
 WITH silver_vendas AS (
-    -- Direct Delta scan from Silver (Task 3.1)
-    -- dbt-duckdb supports delta via external_location if configured, 
-    -- but direct scan is more reliable for custom Delta/S3 paths.
-    SELECT * FROM delta_scan('s3://silver/erp_vendas/dt=2024-03-29/')
+    -- Consumindo da camada Silver via Delta Scan com data dinâmica
+    SELECT * FROM delta_scan('s3://silver/erp_vendas/dt=' ~ base_date ~ '/')
 ),
 
 silver_clientes AS (
-    SELECT * FROM delta_scan('s3://silver/crm_clientes/dt=2024-03-29/')
+    SELECT * FROM delta_scan('s3://silver/crm_clientes/dt=' ~ base_date ~ '/')
 ),
 
 enriched_sales AS (

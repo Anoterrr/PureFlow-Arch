@@ -1,0 +1,22 @@
+{
+  "data": {
+    "asset": {
+      "id": "b2454adc-51da-4617-90dc-4b9adbd2b6c7",
+      "name": "sales_bronze_asset"
+    },
+    "batch_definition": {
+      "id": "b397bc70-92e1-4e6a-bdd3-aa9e23478165",
+      "name": "sales_bronze_batch_def"
+    },
+    "datasource": {
+      "id": "63ffa8b1-9ea2-4543-a716-68a0b12ca808",
+      "name": "sales_quality_datasource"
+    }
+  },
+  "id": "f3a0f24f-d083-4b5b-b74e-1074bec324be",
+  "name": "sales_bronze_validation",
+  "suite": {
+    "id": "c81dd04b-4215-4d9f-b27c-4719c7279e49",
+    "name": "sales_quality_suite"
+  }
+}

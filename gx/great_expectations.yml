@@ -96,5 +96,20 @@ fluent_datasources:
         query: SELECT * FROM 
           read_csv_auto('data/minio_data/landing-zone/erp_vendas/dt=2024-03-29/vendas.csv')
     connection_string: 'duckdb:///:memory:'
+  sales_quality_datasource:
+    type: sql
+    id: 63ffa8b1-9ea2-4543-a716-68a0b12ca808
+    assets:
+      sales_bronze_asset:
+        type: query
+        id: b2454adc-51da-4617-90dc-4b9adbd2b6c7
+        batch_metadata: {}
+        batch_definitions:
+          sales_bronze_batch_def:
+            id: b397bc70-92e1-4e6a-bdd3-aa9e23478165
+            partitioner:
+        query: SELECT * FROM 
+          read_parquet('s3://bronze/erp_vendas/dt=2026-04-14/vendas.parquet')
+    connection_string: 'duckdb:///:memory:'
 analytics_enabled:
 data_context_id: cb18d2b6-ff70-402b-a6c5-4ad1ee031c46

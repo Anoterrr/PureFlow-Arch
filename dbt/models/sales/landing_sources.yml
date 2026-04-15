@@ -1,0 +1,18 @@
+version: 2
+
+sources:
+  - name: landing
+    description: "Raw files from external systems in MinIO Landing Zone."
+    tables:
+      - name: raw_vendas
+        description: "Raw sales CSV from ERP system."
+        external_location: "s3://landing-zone/erp_vendas/dt={{ var('execution_date', modules.datetime.datetime.now().strftime('%Y-%m-%d')) }}/vendas.csv"
+        options:
+          format: 'csv'
+          header: true
+      
+      - name: raw_clientes
+        description: "Raw customers JSON from CRM system."
+        external_location: "s3://landing-zone/crm_clientes/dt={{ var('execution_date', modules.datetime.datetime.now().strftime('%Y-%m-%d')) }}/clientes.json"
+        options:
+          format: 'json'

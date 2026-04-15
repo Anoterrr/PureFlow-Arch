@@ -11,8 +11,6 @@ echo "🛡️ Fixing permissions for PureFlow-Arch (UID $ANALYST_UID)..."
 
 # Ensure data directories exist
 mkdir -p "$PROJECT_ROOT/data/minio_data"
-mkdir -p "$PROJECT_ROOT/data/gold"
-mkdir -p "$PROJECT_ROOT/data/quarantine"
 mkdir -p "$PROJECT_ROOT/gx/uncommitted/data_docs"
 
 # Apply recursive ownership

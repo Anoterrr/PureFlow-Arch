@@ -20,3 +20,7 @@ models:
     sales:
       +materialized: table
       +schema: gold
+      gold:
+        +materialized: external
+        +format: parquet
+        +location: "s3://gold/{{ model.name }}/dt={{ var('execution_date', '2026-04-15') }}/{{ model.name }}.parquet"

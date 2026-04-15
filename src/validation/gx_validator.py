@@ -1,18 +1,16 @@
 """Module for validating raw data in Landing Zone using Great Expectations (GX)."""
 import sys
-import os
 import duckdb
 
 import great_expectations as gx
 from core.connection import ConnectionFactory
-from core.config import get_s3_paths, get_paths
+from core.config import get_s3_paths
 from core.logger import logger
 from quality.utils import get_gx_context, setup_gx_backend, get_or_create_suite
 
 def validate_landing_data():
     """Validates raw data in the Landing Zone and moves to Quarantine."""
     s3_paths = get_s3_paths()
-    local_paths = get_paths() # Get local filesystem paths
     factory = ConnectionFactory()
     context = get_gx_context()
 
@@ -25,11 +23,10 @@ def validate_landing_data():
     suite = get_or_create_suite(context, "vendas_landing_suite")
     _add_landing_expectations(suite)
 
-    # Use local path for validation to avoid S3 credential issues in the container
-    # The container mounts the project root at /app, so path is relative to /app
-    vendas_landing_path = f"{local_paths[0]}/vendas.csv"
+    # Use S3 path directly
+    vendas_landing_path = s3_paths['vendas_landing']
     
-    logger.info("🔍 Local path for validation: %s", vendas_landing_path)
+    logger.info("🔍 S3 path for validation: %s", vendas_landing_path)
 
     asset_name = "vendas_landing_asset"
     # Delete old asset if it exists to force update the query
@@ -75,6 +72,7 @@ def validate_landing_data():
 
     logger.info("✅ Landing data validated successfully!")
     context.build_data_docs()
+    raw_conn.close()
 
 def _add_landing_expectations(suite):
     """Expectations for raw landing data."""

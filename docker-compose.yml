@@ -20,65 +20,46 @@ services:
     networks:
       - pureflow_net
 
-  # --- CREATE AIRFLOW instance ---
-  airflow:
-    image: apache/airflow:2.7.1-python3.11
-    container_name: pureflow_airflow
-    # Run as host user UID 1000 to avoid permission issues with mounted volumes
-    user: "1000:0"
+  # --- DAGSTER: Modern Data Orchestrator (Open Source) ---
+  dagster:
+    build: .
+    container_name: pureflow_dagster
     environment:
-      - AIRFLOW_HOME=/opt/airflow/.airflow
-      - AIRFLOW__CORE__DAGS_FOLDER=/opt/airflow/dags
-      - AIRFLOW__CORE__EXECUTOR=LocalExecutor
-      - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql+psycopg2://${POSTGRES_USER:-airflow}:${POSTGRES_PASSWORD:-airflow}@postgres:5432/${POSTGRES_DB:-airflow}
-      - AIRFLOW_UID=1000
-      - PYTHONPATH=/opt/airflow/src
-      - _PIP_ADDITIONAL_REQUIREMENTS=duckdb dbt-duckdb duckdb-engine great-expectations pandas>=2.2.2 numpy<2.0.0 deltalake python-dotenv
+      - DAGSTER_HOME=/opt/dagster/dagster_home
+      - PYTHONPATH=/opt/dagster/app/src
       - STORAGE_USER=${STORAGE_USER}
       - STORAGE_PASSWORD=${STORAGE_PASSWORD}
       - S3_ENDPOINT=http://minio:9000
     volumes:
-      - .:/opt/airflow
+      - .:/opt/dagster/app
+      - ./dagster_home:/opt/dagster/dagster_home
     ports:
-      - "8080:8080"
+      - "3000:3000"
+    command: dagster dev -h 0.0.0.0 -p 3000 -f /opt/dagster/app/src/orchestration.py
     depends_on:
-      postgres:
-        condition: service_healthy
       minio:
         condition: service_healthy
-    command: standalone
     networks:
       - pureflow_net
 
-  postgres: # Necessary for Airflow metadata
-    image: postgres:13
-    container_name: pureflow_metadata
-    environment:
-      - POSTGRES_USER=${POSTGRES_USER:-airflow}
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-airflow}
-      - POSTGRES_DB=${POSTGRES_DB:-airflow}
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-airflow}"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-    networks:
-      - pureflow_net
-
-  # --- APP: The Dev Environment (Python, dbt, GX) ---
-  app:
+  # --- DASHBOARD: Visual Insights for BI ---
+  dashboard:
     build: .
-    container_name: pureflow_app
+    container_name: pureflow_dashboard
+    environment:
+      - STORAGE_USER=${STORAGE_USER}
+      - STORAGE_PASSWORD=${STORAGE_PASSWORD}
+      - S3_ENDPOINT=http://minio:9000
     volumes:
       - .:/app
-    env_file: .env
+    ports:
+      - "8501:8501"
+    command: streamlit run /app/src/dashboard.py
     depends_on:
       minio:
         condition: service_healthy
     networks:
       - pureflow_net
-    stdin_open: true
-    tty: true
 
 networks:
   pureflow_net:

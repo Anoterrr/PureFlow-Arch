@@ -23,11 +23,11 @@ class SalesIngestor(BaseIngestor):
         super().__init__("sales")
 
     def ingest(self):
-        """Converts raw CSV to Parquet and uploads to Landing Zone in MinIO."""
+        """Converts raw CSV from Landing Zone to Parquet in Bronze Layer."""
         conn = self.factory.get_duckdb_conn()
         self.factory.setup_s3_auth(conn)
 
-        # Local CSV path (input) and Landing S3 path (output)
+        # S3 Landing path (input) and Bronze S3 path (output)
         landing_csv = self.paths['vendas_landing']
         bronze_parquet = self.paths['vendas_bronze']
 

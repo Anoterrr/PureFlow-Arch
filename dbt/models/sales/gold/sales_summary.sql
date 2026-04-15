@@ -1,14 +1,15 @@
-{{ config(materialized='table') }}
+{{ config(materialized='external', format='parquet') }}
 
-{% set base_date = var('execution_date', '2024-03-29') %}
+{% set base_date = var('execution_date', '2026-04-15') %}
 
 WITH silver_vendas AS (
-    -- Consumindo da camada Silver via Delta Scan com data dinâmica
-    SELECT * FROM delta_scan('s3://silver/erp_vendas/dt=' ~ base_date ~ '/')
+    -- Consumindo da camada Silver via Parquet Scan com data dinâmica
+    SELECT * FROM read_parquet('s3://silver/erp_vendas/dt=' ~ base_date ~ '/vendas.parquet')
 ),
 
 silver_clientes AS (
-    SELECT * FROM delta_scan('s3://silver/crm_clientes/dt=' ~ base_date ~ '/')
+    -- Consumindo da camada Silver via Parquet Scan com data dinâmica
+    SELECT * FROM read_parquet('s3://silver/crm_clientes/dt=' ~ base_date ~ '/clientes.parquet')
 ),
 
 enriched_sales AS (

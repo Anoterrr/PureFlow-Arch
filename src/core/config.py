@@ -2,8 +2,6 @@
 import os
 from datetime import datetime
 
-# Local paths for development/generation
-BASE_LANDING_ZONE = "data/raw"
 # Default date set to today if not provided
 BASE_DATE = os.getenv("EXECUTION_DATE", datetime.now().strftime("%Y-%m-%d"))
 
@@ -11,19 +9,8 @@ BASE_DATE = os.getenv("EXECUTION_DATE", datetime.now().strftime("%Y-%m-%d"))
 S3_BUCKET_LANDING = os.getenv("S3_BUCKET_LANDING", "landing-zone")
 S3_BUCKET_BRONZE = os.getenv("S3_BUCKET_BRONZE", "bronze")
 S3_BUCKET_SILVER = os.getenv("S3_BUCKET_SILVER", "silver")
+S3_BUCKET_GOLD = os.getenv("S3_BUCKET_GOLD", "gold")
 S3_BUCKET_QUARANTINE = os.getenv("S3_BUCKET_QUARANTINE", "quarantine")
-
-
-def get_paths(base_date=BASE_DATE):
-    """Returns the Hive-style paths for sales and customers."""
-    vendas_path = f"{BASE_LANDING_ZONE}/erp_vendas/dt={base_date}"
-    clientes_path = f"{BASE_LANDING_ZONE}/crm_clientes/dt={base_date}"
-
-    # Ensure directories exist
-    os.makedirs(vendas_path, exist_ok=True)
-    os.makedirs(clientes_path, exist_ok=True)
-
-    return vendas_path, clientes_path
 
 
 def get_s3_paths(base_date=BASE_DATE):
@@ -40,6 +27,9 @@ def get_s3_paths(base_date=BASE_DATE):
         # Silver (Validated Delta/Parquet)
         "vendas_silver": f"s3://{S3_BUCKET_SILVER}/erp_vendas/dt={base_date}/",
         "clientes_silver": f"s3://{S3_BUCKET_SILVER}/crm_clientes/dt={base_date}/",
+
+        # Gold (Business Insights/Aggregations)
+        "sales_summary": f"s3://{S3_BUCKET_GOLD}/sales_summary/dt={base_date}/",
 
         # Quarantine (Failed validation)
         "vendas_quarantine":

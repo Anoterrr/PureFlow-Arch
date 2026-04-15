@@ -47,7 +47,11 @@ def setup_gx_backend(context, datasource_name, factory):
     with engine.connect() as conn:
         conn.execute(text("SELECT 1"))
 
-    return datasource
+    # Need a direct connection for quarantine/other operations
+    raw_conn = factory.get_duckdb_conn()
+    factory.setup_s3_auth(raw_conn)
+
+    return datasource, raw_conn
 
 def get_or_create_suite(context, suite_name):
     """Abstraction for suite management."""

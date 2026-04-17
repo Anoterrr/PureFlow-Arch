@@ -61,6 +61,26 @@ services:
     networks:
       - pureflow_net
 
+  # --- DBT DOCS: Static documentation for data modeling and lineage ---
+  dbt_docs:
+    build: .
+    container_name: pureflow_dbt_docs
+    environment:
+      - STORAGE_USER=${STORAGE_USER}
+      - STORAGE_PASSWORD=${STORAGE_PASSWORD}
+      - S3_ENDPOINT=http://minio:9000
+    volumes:
+      - .:/app
+    ports:
+      - "8081:8081"
+    # Runs the dbt docs serve command on the dbt project folder
+    command: poetry run dbt docs serve --project-dir /app/dbt --profiles-dir /app/dbt --port 8081 --host 0.0.0.0
+    depends_on:
+      dagster:
+        condition: service_started
+    networks:
+      - pureflow_net
+
 networks:
   pureflow_net:
     driver: bridge

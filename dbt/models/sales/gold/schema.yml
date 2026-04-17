@@ -1,0 +1,13 @@
+version: 2
+
+models:
+  - name: sales_summary
+    description: |
+      ### Camada Gold (Business Insights)
+      **Propósito:** Agregação final para dashboards e BI.
+      **Validação de Regras de Negócio (GX):** Garante consistência financeira (ex: ticket médio não pode ser absurdamente alto ou baixo, receita total deve bater com os critérios de fechamento).
+    columns:
+      - name: total_revenue
+        description: "Receita total por região/mês."
+      - name: avg_ticket
+        description: "Ticket médio calculado."

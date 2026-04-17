@@ -1,0 +1,22 @@
+version: 2
+
+models:
+  - name: stg_vendas_bronze
+    description: |
+      ### Camada Bronze (Technical Ingestion)
+      **Propósito:** Converter o CSV bruto da Landing Zone para Parquet.
+      **Validação técnica (GX):** Verifica integridade do arquivo, tipos de dados básicos e presença de colunas obrigatórias.
+    columns:
+      - name: id
+        description: "ID original do ERP."
+        tests:
+          - not_null
+      - name: _ingested_at
+        description: "Timestamp técnico de quando o dado entrou no Lakehouse."
+
+  - name: stg_clientes_bronze
+    description: "Ingestão técnica dos dados de clientes (JSON para Parquet)."
+    columns:
+      - name: customer_id
+        tests:
+          - not_null

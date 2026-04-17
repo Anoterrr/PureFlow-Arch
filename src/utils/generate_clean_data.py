@@ -21,9 +21,7 @@ def generate_clean_big_data():
     n_customers = 100_000
     logger.info("🚀 Generating %d customers (CLEAN)...", n_customers)
     customers = generate_base_customers(n_customers)
-    customers["created_at"] = [
-        datetime.strptime(BASE_DATE, "%Y-%m-%d") for _ in range(n_customers)
-    ]
+    customers["created_at"] = [BASE_DATE] * n_customers
 
     df_customers = pd.DataFrame(customers)
     

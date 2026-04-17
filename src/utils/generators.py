@@ -28,7 +28,5 @@ def generate_base_vendas(n_vendas, n_customers, amount_range, base_date,
         "category": np.random.choice(
             ["Electronics", "Home", "Fashion", "Grocery", "Garden"], n_vendas
         ),
-        "sale_date": [
-            datetime.strptime(base_date, "%Y-%m-%d").strftime("%Y-%m-%d") for _ in range(n_vendas)
-        ],
+        "sale_date": [base_date] * n_vendas,
     }

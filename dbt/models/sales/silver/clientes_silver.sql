@@ -8,7 +8,6 @@ SELECT
     customer_id,
     name,
     email,
-    phone,
     region,
     CAST(created_at AS DATE) as created_at,
     _ingested_at,

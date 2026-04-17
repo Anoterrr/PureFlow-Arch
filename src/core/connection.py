@@ -24,6 +24,8 @@ class ConnectionFactory:
         conn.execute("LOAD httpfs;")
         conn.execute("INSTALL delta;")
         conn.execute("LOAD delta;")
+        conn.execute("INSTALL json;")
+        conn.execute("LOAD json;")
 
         return conn
 

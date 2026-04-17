@@ -36,6 +36,8 @@ def setup_gx_backend(context, datasource_name, factory):
         logger.info("🔧 Configuring DuckDB S3 connection via SQLAlchemy event...")
         cursor = dbapi_connection.cursor()
         cursor.execute("INSTALL httpfs; LOAD httpfs;")
+        cursor.execute("INSTALL delta; LOAD delta;")
+        cursor.execute("INSTALL json; LOAD json;")
         cursor.execute(f"SET s3_endpoint = '{s3_endpoint}';")
         cursor.execute(f"SET s3_access_key_id = '{storage_user}';")
         cursor.execute(f"SET s3_secret_access_key = '{storage_password}';")

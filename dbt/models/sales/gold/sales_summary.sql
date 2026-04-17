@@ -1,15 +1,15 @@
-{{ config(materialized='external', format='parquet') }}
-
-{% set base_date = var('execution_date', '2026-04-15') %}
+{{ config(
+    materialized='external',
+    location="s3://gold/sales_summary/dt=" ~ var('execution_date', '2026-04-15') ~ "/sales_summary.parquet",
+    format='parquet'
+) }}
 
 WITH silver_vendas AS (
-    -- Consumindo da camada Silver via Parquet Scan com data dinâmica
-    SELECT * FROM read_parquet('s3://silver/erp_vendas/dt=' ~ base_date ~ '/vendas.parquet')
+    SELECT * FROM {{ ref('vendas_silver') }}
 ),
 
 silver_clientes AS (
-    -- Consumindo da camada Silver via Parquet Scan com data dinâmica
-    SELECT * FROM read_parquet('s3://silver/crm_clientes/dt=' ~ base_date ~ '/clientes.parquet')
+    SELECT * FROM {{ ref('clientes_silver') }}
 ),
 
 enriched_sales AS (

@@ -88,6 +88,7 @@ docker-compose up -d --build
 | Tool | Endpoint | Description |
 | :--- | :--- | :--- |
 | **Dagster** | [http://localhost:3000](http://localhost:3000) | Pipeline, Lineage, and Quality Checks |
+| **dbt Docs** | [http://localhost:8081](http://localhost:8081) | Data Lineage and Metadata Documentation |
 | **Streamlit BI** | [http://localhost:8501](http://localhost:8501) | Business Dashboard (Gold Layer Insights) |
 | **MinIO Console** | [http://localhost:9001](http://localhost:9001) | S3 Object Browser (Storage) |
 | **GX Data Docs** | `gx/uncommitted/data_docs/local_site/index.html` | Detailed Quality Reports |

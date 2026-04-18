@@ -1,5 +1,4 @@
 """Module for generating synthetic big data in Hive-partitioned structure."""
-from datetime import datetime
 import pandas as pd
 
 from core.config import get_s3_paths, BASE_DATE
@@ -14,19 +13,21 @@ def generate_clean_big_data():
     factory = ConnectionFactory()
     conn = factory.get_duckdb_conn()
     factory.setup_s3_auth(conn)
-    
+
     s3_paths = get_s3_paths()
-    
+
     # 2. Generate clean crm_clientes (~100k rows)
     n_customers = 100_000
     logger.info("🚀 Generating %d customers (CLEAN)...", n_customers)
     customers = generate_base_customers(n_customers)
     customers["created_at"] = [BASE_DATE] * n_customers
 
-    df_customers = pd.DataFrame(customers)
-    
+    df_customers = pd.DataFrame(customers)  # pylint: disable=unused-variable
+
     logger.info("📤 Writing customers directly to Landing Zone: %s", s3_paths['clientes_landing'])
-    conn.execute(f"COPY df_customers TO '{s3_paths['clientes_landing']}' (FORMAT 'JSON', ARRAY TRUE)")
+    conn.execute(
+        f"COPY df_customers TO '{s3_paths['clientes_landing']}' (FORMAT 'JSON', ARRAY TRUE)"
+    )
 
     # 3. Generate clean erp_vendas (~1M rows)
     n_vendas = 1_000_000
@@ -37,7 +38,7 @@ def generate_clean_big_data():
         amount_range=(10.0, 5000.0),
         base_date=BASE_DATE
     )
-    df_vendas = pd.DataFrame(vendas)
+    df_vendas = pd.DataFrame(vendas)  # pylint: disable=unused-variable
 
     logger.info("📤 Writing sales directly to Landing Zone: %s", s3_paths['vendas_landing'])
     conn.execute(f"COPY df_vendas TO '{s3_paths['vendas_landing']}' (FORMAT 'CSV', HEADER TRUE)")

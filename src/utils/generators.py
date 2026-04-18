@@ -1,5 +1,4 @@
 """Shared utility functions for synthetic data generation."""
-from datetime import datetime
 import numpy as np
 
 
@@ -10,7 +9,8 @@ def generate_base_customers(n_customers):
         "nome": [f"Customer_{i}" for i in range(n_customers)],
         "email": [f"customer_{i}@example.com" for i in range(n_customers)],
         "cidade": np.random.choice(
-            ["São Paulo", "Rio de Janeiro", "Belo Horizonte", "Curitiba", "Porto Alegre"], n_customers
+            ["São Paulo", "Rio de Janeiro", "Belo Horizonte", "Curitiba", "Porto Alegre"],
+            n_customers
         ),
         "estado": np.random.choice(
             ["SP", "RJ", "MG", "PR", "RS"], n_customers

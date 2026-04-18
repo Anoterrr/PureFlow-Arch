@@ -24,13 +24,17 @@ dbt = DbtCliResource(project_dir=os.fspath(DBT_PROJECT_DIR))
 
 # This translator connects dbt sources to our Factory assets
 class PureFlowDbtTranslator(DagsterDbtTranslator):
+    """Custom translator for PureFlow dbt assets to map sources and groups."""
+
     def get_asset_key(self, dbt_resource_props):
+        """Maps dbt source names to Dagster AssetKeys."""
         resource_type = dbt_resource_props.get("resource_type")
         if resource_type == "source":
             return AssetKey(dbt_resource_props["name"])
         return super().get_asset_key(dbt_resource_props)
 
     def get_group_name(self, dbt_resource_props):
+        """Assigns 'gold' group to dbt models."""
         # Only put actual models in the 'gold' group
         if dbt_resource_props.get("resource_type") == "model":
             return "gold"
@@ -40,8 +44,9 @@ class PureFlowDbtTranslator(DagsterDbtTranslator):
     manifest=DBT_PROJECT_DIR.joinpath("target", "manifest.json"),
     dagster_dbt_translator=PureFlowDbtTranslator()
 )
-def pureflow_dbt_assets(context, dbt: DbtCliResource):
-    yield from dbt.cli(["run"], context=context).stream()
+def pureflow_dbt_assets(context, dbt_resource: DbtCliResource):
+    """Assets representing dbt models in the transformation pipeline."""
+    yield from dbt_resource.cli(["run"], context=context).stream()
 
 # --- 2. Landing Zone Generation Assets ---
 
@@ -78,10 +83,10 @@ pureflow_pipeline_job = define_asset_job(
 all_assets = [
     generate_clean_data,
     generate_dirty_data,
-    stg_vendas_bronze, 
-    vendas_silver, 
-    stg_clientes_bronze, 
-    clientes_silver, 
+    stg_vendas_bronze,
+    vendas_silver,
+    stg_clientes_bronze,
+    clientes_silver,
     pureflow_dbt_assets
 ]
 

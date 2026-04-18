@@ -1,8 +1,8 @@
 """Core Quality Engine: Integrates Great Expectations with DuckDB and S3."""
 import os
 import great_expectations as gx
-from sqlalchemy import text, event
-from core.logger import logger
+from great_expectations.core.expectation_suite import ExpectationSuite
+from sqlalchemy import event
 
 def get_gx_context():
     """Initializes and returns the GX context in the 'gx' directory."""
@@ -16,7 +16,8 @@ def setup_gx_backend(context, datasource_name, factory):
     Standardizes GX Backend setup to avoid duplication.
     Injects S3 configuration into the DuckDB connection used by Great Expectations.
     """
-    s3_endpoint = os.getenv("S3_ENDPOINT", "http://minio:9000").replace("http://", "").replace("https://", "")
+    s3_endpoint = os.getenv("S3_ENDPOINT", "http://minio:9000")
+    s3_endpoint = s3_endpoint.replace("http://", "").replace("https://", "")
     storage_user = os.getenv("STORAGE_USER", "admin")
     storage_password = os.getenv("STORAGE_PASSWORD", "strongpassword123")
 
@@ -25,16 +26,16 @@ def setup_gx_backend(context, datasource_name, factory):
     except (ValueError, KeyError):
         # We use duckdb:///:memory: because GX only needs a processing engine
         datasource = context.data_sources.add_sql(
-            name=datasource_name, 
+            name=datasource_name,
             connection_string="duckdb:///:memory:"
         )
 
     engine = datasource.get_execution_engine().engine
-    
-    # IMPORTANT: We use SQLAlchemy events to ensure S3 is configured 
+
+    # IMPORTANT: We use SQLAlchemy events to ensure S3 is configured
     # every time GX/SQLAlchemy opens a new connection to DuckDB.
     @event.listens_for(engine, "connect")
-    def receive_connect(dbapi_connection, connection_record):
+    def receive_connect(dbapi_connection, _connection_record):
         cursor = dbapi_connection.cursor()
         cursor.execute("INSTALL httpfs; LOAD httpfs;")
         cursor.execute("INSTALL json; LOAD json;")
@@ -55,7 +56,7 @@ def get_or_create_suite(context, suite_name):
     """Abstraction for GX suite management."""
     try:
         return context.suites.get(name=suite_name)
-    except Exception:
-        from great_expectations.core.expectation_suite import ExpectationSuite
+    except Exception:  # pylint: disable=broad-exception-caught
+        # Create new suite if it doesn't exist
         suite = ExpectationSuite(name=suite_name)
         return context.suites.add(suite)

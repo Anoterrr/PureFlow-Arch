@@ -1,6 +1,6 @@
 """Sales data pipelines defined using the DataPipelineFactory."""
-from core.factory import DataPipelineFactory
 import os
+from core.factory import DataPipelineFactory
 
 # Paths to SQL files
 SQL_DIR = os.path.join("src", "sql", "sales")
@@ -20,7 +20,10 @@ stg_vendas_bronze = DataPipelineFactory.create_asset(
     sql_transform=DataPipelineFactory.load_sql(os.path.join(SQL_DIR, "stg_vendas_bronze.sql")),
     expectations=[
         {"expectation": "ExpectColumnValuesToNotBeNull", "kwargs": {"column": "id"}},
-        {"expectation": "ExpectTableRowCountToBeBetween", "kwargs": {"min_value": 1, "max_value": 2000000}}
+        {
+            "expectation": "ExpectTableRowCountToBeBetween",
+            "kwargs": {"min_value": 1, "max_value": 2000000}
+        }
     ]
 )
 
@@ -39,6 +42,9 @@ vendas_silver = DataPipelineFactory.create_asset(
     },
     sql_transform=DataPipelineFactory.load_sql(os.path.join(SQL_DIR, "vendas_silver.sql")),
     expectations=[
-        {"expectation": "ExpectColumnValuesToBeBetween", "kwargs": {"column": "preco", "min_value": 0, "max_value": 10000}}
+        {
+            "expectation": "ExpectColumnValuesToBeBetween",
+            "kwargs": {"column": "preco", "min_value": 0, "max_value": 10000}
+        }
     ]
 )

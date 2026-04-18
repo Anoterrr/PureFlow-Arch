@@ -1,6 +1,6 @@
 """Customers data pipelines defined using the DataPipelineFactory."""
-from core.factory import DataPipelineFactory
 import os
+from core.factory import DataPipelineFactory
 
 # Paths to SQL files
 SQL_DIR = os.path.join("src", "sql", "customers")
@@ -20,7 +20,10 @@ stg_clientes_bronze = DataPipelineFactory.create_asset(
     sql_transform=DataPipelineFactory.load_sql(os.path.join(SQL_DIR, "stg_clientes_bronze.sql")),
     expectations=[
         {"expectation": "ExpectColumnValuesToNotBeNull", "kwargs": {"column": "cliente_id"}},
-        {"expectation": "ExpectColumnValuesToMatchRegex", "kwargs": {"column": "email", "regex": r"[^@]+@[^@]+\.[^@]+"}}
+        {
+            "expectation": "ExpectColumnValuesToMatchRegex",
+            "kwargs": {"column": "email", "regex": r"[^@]+@[^@]+\.[^@]+"}
+        }
     ]
 )
 

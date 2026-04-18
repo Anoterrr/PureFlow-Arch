@@ -10,11 +10,11 @@ stg_clientes_bronze = DataPipelineFactory.create_asset(
     name="stg_clientes_bronze",
     group_name="bronze",
     source={
-        "path": "s3://landing-zone/erp_clientes/dt={{ execution_date }}/clientes.csv",
-        "format": "csv"
+        "path": "s3://landing-zone/crm_clientes/dt={{ execution_date }}/clientes.json",
+        "format": "json"
     },
     target={
-        "path": "s3://bronze/erp_clientes/dt={{ execution_date }}/clientes.parquet",
+        "path": "s3://bronze/crm_clientes/dt={{ execution_date }}/clientes.parquet",
         "format": "parquet"
     },
     sql_transform=DataPipelineFactory.load_sql(os.path.join(SQL_DIR, "stg_clientes_bronze.sql")),
@@ -30,7 +30,7 @@ clientes_silver = DataPipelineFactory.create_asset(
     group_name="silver",
     depends_on=["stg_clientes_bronze"],
     source={
-        "path": "s3://bronze/erp_clientes/dt={{ execution_date }}/clientes.parquet",
+        "path": "s3://bronze/crm_clientes/dt={{ execution_date }}/clientes.parquet",
         "format": "parquet"
     },
     target={

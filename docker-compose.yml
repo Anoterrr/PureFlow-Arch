@@ -37,8 +37,10 @@ services:
       - ./dagster_home:/app/dagster_home
     ports:
       - "3000:3000"
-    # Using 'dagster dev' to automatically load the orchestration file
-    command: dagster dev -h 0.0.0.0 -p 3000 -f /app/src/orchestration.py
+    # COMPILATION GATE: Ensures dbt manifest is fresh before starting Dagster
+    command: >
+      bash -c "cd dbt && dbt compile --profiles-dir . --profile pureflow && 
+               cd /app && dagster dev -h 0.0.0.0 -p 3000 -f /app/src/orchestration.py"
     depends_on:
       minio:
         condition: service_healthy

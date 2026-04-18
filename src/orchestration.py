@@ -1,28 +1,83 @@
 """Modern Orchestration for PureFlow-Arch using Dagster (Asset-Based)."""
+import os
+from pathlib import Path
 from dagster import (
     Definitions, 
     asset, 
     define_asset_job,
     AssetSelection,
+    AssetKey,
 )
-from dagster_dbt import DbtCliResource, dbt_assets
-import os
-from pathlib import Path
+from dagster_dbt import DbtCliResource, dbt_assets, DagsterDbtTranslator
 
 # Import our new Factory-based assets
 from pipelines.sales import stg_vendas_bronze, vendas_silver
 from pipelines.customers import stg_clientes_bronze, clientes_silver
 
-# --- 1. dbt Configuration ---
+# Import data generators
+from utils.generate_clean_data import generate_clean_big_data
+from utils.generate_dirty_data import generate_dirty_big_data
+
+# --- 1. dbt Configuration with Lineage Mapping ---
 DBT_PROJECT_DIR = Path(__file__).joinpath("..", "..", "dbt").resolve()
 dbt = DbtCliResource(project_dir=os.fspath(DBT_PROJECT_DIR))
 
-@dbt_assets(manifest=DBT_PROJECT_DIR.joinpath("target", "manifest.json"))
+# This translator connects dbt sources to our Factory assets
+class PureFlowDbtTranslator(DagsterDbtTranslator):
+    def get_asset_key(self, dbt_resource_props):
+        resource_type = dbt_resource_props.get("resource_type")
+        if resource_type == "source":
+            return AssetKey(dbt_resource_props["name"])
+        return super().get_asset_key(dbt_resource_props)
+
+    def get_group_name(self, dbt_resource_props):
+        # Only put actual models in the 'gold' group
+        if dbt_resource_props.get("resource_type") == "model":
+            return "gold"
+        return super().get_group_name(dbt_resource_props)
+
+@dbt_assets(
+    manifest=DBT_PROJECT_DIR.joinpath("target", "manifest.json"),
+    dagster_dbt_translator=PureFlowDbtTranslator()
+)
 def pureflow_dbt_assets(context, dbt: DbtCliResource):
     yield from dbt.cli(["run"], context=context).stream()
 
-# --- 2. Jobs ---
+# --- 2. Landing Zone Generation Assets ---
+
+@asset(group_name="landing", compute_kind="python")
+def generate_clean_data(context):
+    """Generates CLEAN synthetic data in the Landing Zone."""
+    generate_clean_big_data()
+    context.log.info("✅ CLEAN data generated successfully.")
+
+@asset(group_name="landing", compute_kind="python")
+def generate_dirty_data(context):
+    """Generates DIRTY synthetic data to test Quality Gates."""
+    generate_dirty_big_data()
+    context.log.info("⚠️ DIRTY data generated. Quality Gates should trigger.")
+
+# --- 3. Jobs & Definitions ---
+
+ingestion_clean_job = define_asset_job(
+    name="ingestion_clean_job",
+    selection=AssetSelection.assets(generate_clean_data)
+)
+
+ingestion_dirty_job = define_asset_job(
+    name="ingestion_dirty_job",
+    selection=AssetSelection.assets(generate_dirty_data)
+)
+
+# Main Transformation Pipeline (Now includes generation and transformation)
+pureflow_pipeline_job = define_asset_job(
+    name="pureflow_pipeline_job",
+    selection=AssetSelection.all()
+)
+
 all_assets = [
+    generate_clean_data,
+    generate_dirty_data,
     stg_vendas_bronze, 
     vendas_silver, 
     stg_clientes_bronze, 
@@ -30,14 +85,10 @@ all_assets = [
     pureflow_dbt_assets
 ]
 
-pureflow_pipeline_job = define_asset_job(
-    name="pureflow_pipeline_job",
-    selection=AssetSelection.all()
-)
-
-# --- 3. Definitions ---
 defs = Definitions(
     assets=all_assets,
     resources={"dbt": dbt},
-    jobs=[pureflow_pipeline_job]
+    jobs=[
+        pureflow_pipeline_job
+    ]
 )

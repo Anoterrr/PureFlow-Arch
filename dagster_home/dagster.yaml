@@ -1,0 +1,19 @@
+storage:
+  sqlite:
+    base_dir: /app/dagster_home/storage
+
+compute_logs:
+  module: dagster._core.storage.local_compute_log_manager
+  class: LocalComputeLogManager
+  config:
+    base_dir: /app/dagster_home/storage/compute_logs
+
+local_artifact_storage:
+  module: dagster._core.storage.root
+  class: LocalArtifactStorage
+  config:
+    base_dir: /app/dagster_home/storage/artifacts
+
+scheduler:
+  module: dagster._core.scheduler
+  class: DagsterDaemonScheduler

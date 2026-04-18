@@ -1,27 +1,27 @@
 {{ config(
     materialized='external',
-    location="s3://gold/sales_summary/dt=" ~ var('execution_date', '2026-04-15') ~ "/sales_summary.parquet",
+    location="s3://gold/sales_summary/dt=" ~ var('execution_date', '2026-04-17') ~ "/sales_summary.parquet",
     format='parquet'
 ) }}
 
 WITH silver_vendas AS (
-    SELECT * FROM {{ ref('vendas_silver') }}
+    SELECT * FROM {{ source('silver', 'vendas_silver') }}
 ),
 
 silver_clientes AS (
-    SELECT * FROM {{ ref('clientes_silver') }}
+    SELECT * FROM {{ source('silver', 'clientes_silver') }}
 ),
 
 enriched_sales AS (
     SELECT 
         v.id,
-        v.sale_value,
-        v.sale_date,
-        c.name as customer_name,
-        c.region,
-        date_trunc('month', v.sale_date::DATE) as sale_month
+        v.preco as sale_value,
+        v.data_venda as sale_date,
+        c.nome as customer_name,
+        c.uf as region,
+        date_trunc('month', v.data_venda::DATE) as sale_month
     FROM silver_vendas v
-    LEFT JOIN silver_clientes c ON v.customer_id = c.customer_id
+    LEFT JOIN silver_clientes c ON v.cliente_id = c.cliente_id
 )
 
 SELECT 

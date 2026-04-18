@@ -23,8 +23,8 @@ def generate_dirty_big_data():
     customers["created_at"] = [BASE_DATE] * n_customers
     df_customers = pd.DataFrame(customers)
     
-    # Introduce Nulls in customer_id
-    df_customers.loc[0:10, 'customer_id'] = None
+    # Introduce Nulls in id
+    df_customers.loc[0:10, 'id'] = None
     
     logger.info("📤 Writing dirty customers to Landing Zone...")
     conn.execute(f"COPY df_customers TO '{s3_paths['clientes_landing']}' (FORMAT 'JSON', ARRAY TRUE)")

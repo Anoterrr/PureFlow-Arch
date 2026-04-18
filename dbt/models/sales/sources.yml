@@ -1,0 +1,13 @@
+version: 2
+
+sources:
+  - name: silver
+    description: "Cleaned and Validated Data from the Silver layer."
+    schema: silver
+    tables:
+      - name: vendas_silver
+        description: "Sales transactions cleaned and validated by PureFlow Factory."
+        external_location: "s3://silver/vendas/dt={{ var('execution_date', '2026-04-17') }}/vendas.parquet"
+      - name: clientes_silver
+        description: "Customer data cleaned and validated by PureFlow Factory."
+        external_location: "s3://silver/clientes/dt={{ var('execution_date', '2026-04-17') }}/clientes.parquet"

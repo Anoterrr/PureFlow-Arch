@@ -1,4 +1,4 @@
-"""Utility functions for Great Expectations validation."""
+"""Core Quality Engine: Integrates Great Expectations with DuckDB and S3."""
 import os
 import great_expectations as gx
 from sqlalchemy import text, event
@@ -7,22 +7,23 @@ from core.logger import logger
 def get_gx_context():
     """Initializes and returns the GX context in the 'gx' directory."""
     context_root_dir = os.path.abspath("gx")
-    os.makedirs(os.path.join(context_root_dir, "uncommitted/data_docs"),
-                exist_ok=True)
+    # Ensure necessary directories exist for GX Data Docs
+    os.makedirs(os.path.join(context_root_dir, "uncommitted/data_docs"), exist_ok=True)
     return gx.get_context(context_root_dir=context_root_dir)
 
 def setup_gx_backend(context, datasource_name, factory):
     """
     Standardizes GX Backend setup to avoid duplication.
-    Wraps protected member access in one controlled place.
+    Injects S3 configuration into the DuckDB connection used by Great Expectations.
     """
-    s3_endpoint = os.getenv("S3_ENDPOINT", "http://localhost:9000").replace("http://", "")
+    s3_endpoint = os.getenv("S3_ENDPOINT", "http://minio:9000").replace("http://", "").replace("https://", "")
     storage_user = os.getenv("STORAGE_USER", "admin")
     storage_password = os.getenv("STORAGE_PASSWORD", "strongpassword123")
 
     try:
         datasource = context.data_sources.get(datasource_name)
     except (ValueError, KeyError):
+        # We use duckdb:///:memory: because GX only needs a processing engine
         datasource = context.data_sources.add_sql(
             name=datasource_name, 
             connection_string="duckdb:///:memory:"
@@ -30,13 +31,12 @@ def setup_gx_backend(context, datasource_name, factory):
 
     engine = datasource.get_execution_engine().engine
     
-    # Use SQLAlchemy events to ensure every connection has S3 configured
+    # IMPORTANT: We use SQLAlchemy events to ensure S3 is configured 
+    # every time GX/SQLAlchemy opens a new connection to DuckDB.
     @event.listens_for(engine, "connect")
     def receive_connect(dbapi_connection, connection_record):
-        logger.info("🔧 Configuring DuckDB S3 connection via SQLAlchemy event...")
         cursor = dbapi_connection.cursor()
         cursor.execute("INSTALL httpfs; LOAD httpfs;")
-        cursor.execute("INSTALL delta; LOAD delta;")
         cursor.execute("INSTALL json; LOAD json;")
         cursor.execute(f"SET s3_endpoint = '{s3_endpoint}';")
         cursor.execute(f"SET s3_access_key_id = '{storage_user}';")
@@ -45,22 +45,17 @@ def setup_gx_backend(context, datasource_name, factory):
         cursor.execute("SET s3_url_style = 'path';")
         cursor.close()
 
-    # Apply once to current connections if any
-    with engine.connect() as conn:
-        conn.execute(text("SELECT 1"))
-
-    # Need a direct connection for quarantine/other operations
+    # Need a direct connection for helper operations
     raw_conn = factory.get_duckdb_conn()
     factory.setup_s3_auth(raw_conn)
 
     return datasource, raw_conn
 
 def get_or_create_suite(context, suite_name):
-    """Abstraction for suite management."""
+    """Abstraction for GX suite management."""
     try:
         return context.suites.get(name=suite_name)
     except Exception:
-        # In GX 1.x, we create it via context.suites.add
         from great_expectations.core.expectation_suite import ExpectationSuite
         suite = ExpectationSuite(name=suite_name)
         return context.suites.add(suite)

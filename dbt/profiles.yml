@@ -2,7 +2,7 @@ pureflow:
   outputs:
     dev:
       type: duckdb
-      path: ":memory:"
+      path: "{{ env_var('DUCKDB_PATH', 'data/pureflow_lakehouse.db') }}"
       schema: gold
       # Extension and MinIO S3 configurations for DuckDB
       extensions:
@@ -12,7 +12,7 @@ pureflow:
       settings:
         s3_endpoint: "{{ env_var('S3_ENDPOINT', 'localhost:9000') | replace('http://', '') }}"
         s3_access_key_id: "{{ env_var('STORAGE_USER', 'admin') }}"
-        s3_secret_access_key: "{{ env_var('STORAGE_PASSWORD', 'password123') }}"
+        s3_secret_access_key: "{{ env_var('STORAGE_PASSWORD', 'strongpassword123') }}"
         s3_use_ssl: false
         s3_url_style: "path"
   target: dev

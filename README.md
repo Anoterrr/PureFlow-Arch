@@ -1,32 +1,38 @@
-# PureFlow-Arch: Modern S3-Native Data Lakehouse
-### Senior Capstone Project (TCC) - Medallion Architecture
+# PureFlow-Arch: Modern & Modular Data Lakehouse
+### Data Engineering Capstone Project (TCC) - Medallion Architecture
 
-**PureFlow-Arch** is a high-performance, **S3-Native** data engineering framework designed to demonstrate the "Modern Data Lakehouse" paradigm. It implements a full Medallion Architecture using a 100% open-source stack focused on scalability, data quality, and high resource efficiency, making it replicable even on modest hardware.
-
----
-
-## 🏗️ Architecture Overview
-
-The project follows the **Medallion Architecture**, ensuring data evolves through progressive layers of cleanliness and complexity, stored entirely in **S3 (MinIO)**:
-
-1.  **Landing (Raw):** Immutable storage of source files (CSV/JSON) in MinIO.
-2.  **Bronze (Ingested):** Raw data converted to compressed Parquet with technical metadata (`_ingested_at`, `_source_file`) using **DuckDB**.
-3.  **Silver (Filtered & Cleaned):** 
-    *   **Gatekeeper:** **Great Expectations (GX)** validates raw data quality.
-    *   **Transformation:** Data is filtered and standardized via **dbt (DuckDB adapter)** and stored back to S3.
-4.  **Gold (Business/Insights):** Final aggregated datasets materialized as **External Parquet Tables** on S3, partitioned by execution date, ready for BI and AI consumption.
+**PureFlow-Arch** is a high-performance, **metadata-driven** data engineering platform. It implements a full Medallion Architecture using a 100% open-source stack, featuring a custom **Factory Pattern** for pipeline generation, integrated Data Quality (GX), and a robust DataOps CI/CD lifecycle.
 
 ---
 
-## 🛠️ Tech Stack (100% Open Source)
+## 🏗️ Architecture & Design Principles
 
-*   **Orchestration:** **Dagster** (Asset-Based, Lightweight Modern Orchestrator)
-*   **Storage (S3):** **MinIO** (Landing, Bronze, Silver, Gold, and Quarantine buckets)
-*   **Processing Engine:** **DuckDB** (High-performance In-Memory OLAP)
-*   **Data Quality:** **Great Expectations (GX)** (Integrated into Dagster via Asset Checks)
-*   **Transformation Layer:** **dbt** (DuckDB adapter for S3-native modeling)
-*   **Visualization (BI):** **Streamlit** (Real-time dashboard consuming Gold S3 data)
-*   **Environment:** Docker & Poetry (Python 3.11)
+The project is built on **Clean Architecture** and **SOLID** principles, ensuring that infrastructure, execution logic, and business rules are strictly decoupled.
+
+### 1. Medallion Layers (S3-Native)
+Data evolves through progressive layers in **MinIO (S3)**:
+*   **Landing (Raw):** Source files (CSV/JSON) in their original format.
+*   **Bronze (Standardized):** Technical ingestion (Schema enforcement) using **DuckDB**.
+*   **Silver (Validated & Clean):** High-quality data after **Great Expectations** gates and SQL transformations.
+*   **Gold (Business Ready):** Aggregated datasets managed by **dbt**, ready for BI consumption.
+
+### 2. The DataPipeline Factory (Innovation)
+Instead of hardcoding every step, the project uses a **Factory Pattern** (`DataPipelineFactory`). This abstraction allows developers to define complex pipelines in Python using a simple, declarative DSL:
+*   **Automatic Lineage:** Dependencies are inferred and mapped natively in **Dagster**.
+*   **Decoupled SQL:** Business logic is stored in pure `.sql` files, separate from the execution engine.
+*   **Dynamic Quality Gates:** Validation rules are injected into the pipeline at runtime.
+
+---
+
+## 🛠️ Tech Stack & Ecosystem
+
+*   **Orchestration:** [Dagster](https://dagster.io/) (Asset-Based, Modern Orchestrator)
+*   **Storage:** [MinIO](https://min.io/) (High-performance S3-Compatible Storage)
+*   **Processing:** [DuckDB](https://duckdb.org/) (The "SQLite for Analytics" - Local-first OLAP)
+*   **Quality:** [Great Expectations](https://greatexpectations.io/) (Dynamic Data Validation)
+*   **Modeling:** [dbt](https://www.getdbt.com/) (Modular SQL transformations for the Gold Layer)
+*   **DataOps:** GitHub Actions (Automated Linting, Security, and Testing)
+*   **Environment:** Docker & Poetry (Python 3.12)
 
 ---
 
@@ -34,17 +40,16 @@ The project follows the **Medallion Architecture**, ensuring data evolves throug
 
 ```text
 PureFlow-Arch/
-├── dbt/                    # dbt Project (Bronze -> Silver -> Gold S3 models)
+├── .github/workflows/      # CI/CD DataOps Pipelines
+├── dbt/                    # dbt Project (Gold Layer Models)
 ├── src/
-│   ├── orchestration.py    # Dagster Assets & Pipeline Definitions
-│   ├── dashboard.py        # Streamlit BI Dashboard logic
-│   ├── core/               # Shared S3 connections and logging logic
-│   ├── ingestion/          # Domain-driven ingestion classes (Sales)
-│   ├── validation/         # Great Expectations validation logic
-│   └── quality/            # Domain-specific quality rules
-├── data/
-│   └── minio_data/         # Local volume for MinIO (S3 Buckets)
-└── scripts/                # Infrastructure & permission setup
+│   ├── core/               # Shared Engine, Factory, Connection & Quality logic
+│   ├── pipelines/          # Declarative Pipeline Definitions (Sales, Customers)
+│   ├── sql/                # Pure SQL Transformation Logic (Separated from code)
+│   ├── validation/         # Generic GX Validation Wrapper
+│   └── orchestration.py    # Dagster Entrypoint & UI Definitions
+├── tests/                  # Unit tests for core logic and generators
+└── pyproject.toml          # Centralized Project Metadata & Config
 ```
 
 ---
@@ -53,45 +58,30 @@ PureFlow-Arch/
 
 ### 1. Prerequisites
 *   Docker & Docker Compose
-*   Python 3.11 (Optional for local development)
+*   Poetry (Optional for local development)
 
-### 2. Setup Permissions
-To ensure the `analyst` user (UID 1000) can manage the data volumes:
-```bash
-chmod +x scripts/setup_perms.sh
-./scripts/setup_perms.sh
-```
-
-### 3. Spin up Infrastructure
+### 2. Launch the Platform
 ```bash
 docker-compose up -d --build
 ```
-*This setup is optimized to run with ~1GB of RAM, significantly lighter than traditional Airflow stacks.*
 
-### 4. Run the Pipeline
-1.  Access the **Dagster UI** at [http://localhost:3000](http://localhost:3000).
-2.  Navigate to **Assets** or **Jobs** and trigger the `full_pipeline_job`.
-3.  Monitor the **Asset Checks** to see Great Expectations validation results in real-time.
-
----
-
-## 🛡️ Data Quality & Observability
-
-*   **Integrated Quality:** Great Expectations is embedded into the Dagster graph. Every run generates a visual **Data Doc** report.
-*   **Circuit Breaker:** If data fails validation, the pipeline halts and moves offending data to the **S3 Quarantine bucket**.
-*   **S3-Native:** No local databases. Every layer is stored in S3, ensuring the project reflects a real-world cloud architecture.
-
----
-
-## 📊 Monitoring & BI
-
+### 3. Monitoring & Access
 | Tool | Endpoint | Description |
 | :--- | :--- | :--- |
-| **Dagster** | [http://localhost:3000](http://localhost:3000) | Pipeline, Lineage, and Quality Checks |
-| **dbt Docs** | [http://localhost:8081](http://localhost:8081) | Data Lineage and Metadata Documentation |
-| **Streamlit BI** | [http://localhost:8501](http://localhost:8501) | Business Dashboard (Gold Layer Insights) |
-| **MinIO Console** | [http://localhost:9001](http://localhost:9001) | S3 Object Browser (Storage) |
-| **GX Data Docs** | `gx/uncommitted/data_docs/local_site/index.html` | Detailed Quality Reports |
+| **Dagster UI** | [http://localhost:3000](http://localhost:3000) | Pipeline Lineage & Execution |
+| **Streamlit** | [http://localhost:8501](http://localhost:8501) | Business Insights Dashboard |
+| **dbt Docs** | [http://localhost:8081](http://localhost:8081) | Data Documentation & Catalog |
+| **MinIO Console** | [http://localhost:9001](http://localhost:9001) | S3 Object Browser |
 
 ---
-*Developed as a Senior Capstone Project in Data Engineering.*
+
+## 🛡️ DataOps & Quality Control
+
+The project implements a mandatory **Quality Gate** before any data reaches the Silver/Gold layers:
+1.  **Linting:** `pylint` and `sqlfluff` ensure code and SQL standards.
+2.  **Security:** `bandit` scans for vulnerabilities in the code.
+3.  **Validation:** Every asset is checked by **Great Expectations**. If a check fails (e.g., Null IDs, Negative Prices), the pipeline stops and alerts the operator.
+4.  **Testing:** `pytest` validates the underlying generators and core utilities.
+
+---
+*Developed as a Modular Data Platform for Senior Engineering Capstone.*

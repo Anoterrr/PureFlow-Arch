@@ -20,22 +20,25 @@ services:
     networks:
       - pureflow_net
 
-  # --- DAGSTER: Modern Data Orchestrator (Open Source) ---
+  # --- DAGSTER: Modern Data Orchestrator ---
   dagster:
     build: .
     container_name: pureflow_dagster
     environment:
-      - DAGSTER_HOME=/opt/dagster/dagster_home
-      - PYTHONPATH=/opt/dagster/app/src
+      - DAGSTER_HOME=/app/dagster_home
+      - PYTHONPATH=/app/src
       - STORAGE_USER=${STORAGE_USER}
       - STORAGE_PASSWORD=${STORAGE_PASSWORD}
       - S3_ENDPOINT=http://minio:9000
+      - DUCKDB_PATH=${DUCKDB_PATH}
+    working_dir: /app
     volumes:
-      - .:/opt/dagster/app
-      - ./dagster_home:/opt/dagster/dagster_home
+      - .:/app
+      - ./dagster_home:/app/dagster_home
     ports:
       - "3000:3000"
-    command: dagster dev -h 0.0.0.0 -p 3000 -f /opt/dagster/app/src/orchestration.py
+    # Using 'dagster dev' to automatically load the orchestration file
+    command: dagster dev -h 0.0.0.0 -p 3000 -f /app/src/orchestration.py
     depends_on:
       minio:
         condition: service_healthy
@@ -50,6 +53,7 @@ services:
       - STORAGE_USER=${STORAGE_USER}
       - STORAGE_PASSWORD=${STORAGE_PASSWORD}
       - S3_ENDPOINT=http://minio:9000
+      - PYTHONPATH=/app/src
     volumes:
       - .:/app
     ports:
@@ -61,7 +65,7 @@ services:
     networks:
       - pureflow_net
 
-  # --- DBT DOCS: Static documentation for data modeling and lineage ---
+  # --- DBT DOCS: Lineage and Documentation ---
   dbt_docs:
     build: .
     container_name: pureflow_dbt_docs
@@ -69,12 +73,13 @@ services:
       - STORAGE_USER=${STORAGE_USER}
       - STORAGE_PASSWORD=${STORAGE_PASSWORD}
       - S3_ENDPOINT=http://minio:9000
+      - PYTHONPATH=/app/src
     volumes:
       - .:/app
     ports:
       - "8081:8081"
-    # Runs the dbt docs serve command on the dbt project folder
-    command: poetry run dbt docs serve --project-dir /app/dbt --profiles-dir /app/dbt --port 8081 --host 0.0.0.0
+    # Port 8081 to avoid conflict with streamlit
+    command: dbt docs serve --project-dir /app/dbt --profiles-dir /app/dbt --port 8081 --host 0.0.0.0
     depends_on:
       dagster:
         condition: service_started

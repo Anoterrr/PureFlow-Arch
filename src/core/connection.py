@@ -13,6 +13,12 @@ class ConnectionFactory:
     def get_duckdb_conn():
         """Returns a DuckDB connection configured for the local environment."""
         db_path = os.getenv("DUCKDB_PATH", "data/datagate_local.db")
+        
+        # Ensure parent directory exists
+        db_dir = os.path.dirname(db_path)
+        if db_dir and not os.path.exists(db_dir):
+            os.makedirs(db_dir, exist_ok=True)
+            
         conn = duckdb.connect(db_path)
 
         # Configurations for Arch WSL / 32GB RAM
@@ -32,11 +38,15 @@ class ConnectionFactory:
     @staticmethod
     def setup_s3_auth(conn):
         """Configures credentials for DuckDB to see MinIO."""
-        s3_endpoint = os.getenv("S3_ENDPOINT", "http://localhost:9000")
+        # Prioritize the environment variable, default to minio for docker context
+        s3_endpoint = os.getenv("S3_ENDPOINT", "http://minio:9000")
         storage_user = os.getenv("STORAGE_USER", "admin")
         storage_password = os.getenv("STORAGE_PASSWORD", "strongpassword123")
 
-        conn.execute(f"SET s3_endpoint = '{s3_endpoint.replace('http://', '')}'")
+        # Clean endpoint for DuckDB (remove http:// or https://)
+        clean_endpoint = s3_endpoint.replace("http://", "").replace("https://", "")
+
+        conn.execute(f"SET s3_endpoint = '{clean_endpoint}'")
         conn.execute(f"SET s3_access_key_id = '{storage_user}'")
         conn.execute(f"SET s3_secret_access_key = '{storage_password}'")
         conn.execute("SET s3_use_ssl = false")

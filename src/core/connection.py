@@ -1,5 +1,7 @@
 """Module to manage connections to Storage (MinIO) and the Processing Engine (DuckDB)."""
+
 import os
+
 import duckdb
 from dotenv import load_dotenv
 
@@ -13,12 +15,12 @@ class ConnectionFactory:
     def get_duckdb_conn():
         """Returns a DuckDB connection configured for the local environment."""
         db_path = os.getenv("DUCKDB_PATH", "data/datagate_local.db")
-        
+
         # Ensure parent directory exists
         db_dir = os.path.dirname(db_path)
         if db_dir and not os.path.exists(db_dir):
             os.makedirs(db_dir, exist_ok=True)
-            
+
         conn = duckdb.connect(db_path)
 
         # Configurations for Arch WSL / 32GB RAM

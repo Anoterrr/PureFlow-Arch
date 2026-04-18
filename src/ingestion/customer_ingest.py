@@ -1,12 +1,14 @@
 """Domain-specific Ingestion for Customers."""
+
 import os
-from ingestion.sales_ingest import BaseIngestor
-from core.connection import ConnectionFactory
-from core.config import get_s3_paths
+
 from core.logger import logger
+from ingestion.sales_ingest import BaseIngestor
+
 
 class CustomerIngestor(BaseIngestor):
     """Handles JSON-to-Parquet conversion for Customers domain."""
+
     def __init__(self):
         super().__init__("customers")
 
@@ -16,11 +18,12 @@ class CustomerIngestor(BaseIngestor):
         self.factory.setup_s3_auth(conn)
 
         # S3 Landing path (input) and Bronze S3 path (output)
-        landing_json = self.paths['clientes_landing']
-        bronze_parquet = self.paths['clientes_bronze']
+        landing_json = self.paths["clientes_landing"]
+        bronze_parquet = self.paths["clientes_bronze"]
 
-        logger.info("🚀 [Customer Ingest] Processing: %s -> %s",
-                    landing_json, bronze_parquet)
+        logger.info(
+            "🚀 [Customer Ingest] Processing: %s -> %s", landing_json, bronze_parquet
+        )
 
         try:
             # Atomic operation: read JSON, add metadata, write Parquet to Bronze
@@ -40,6 +43,7 @@ class CustomerIngestor(BaseIngestor):
             raise err
         finally:
             conn.close()
+
 
 if __name__ == "__main__":
     CustomerIngestor().ingest()

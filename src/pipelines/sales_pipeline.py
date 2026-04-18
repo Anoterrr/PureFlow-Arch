@@ -1,4 +1,5 @@
 """Sales data pipelines defined using the DataPipelineFactory."""
+
 from core.factory import DataPipelineFactory
 
 # --- 1. Bronze Layer (Landing -> Bronze) ---
@@ -7,11 +8,11 @@ stg_vendas_bronze = DataPipelineFactory.create_asset(
     group_name="bronze",
     source={
         "path": "s3://landing-zone/erp_vendas/dt={{ execution_date }}/vendas.csv",
-        "format": "csv"
+        "format": "csv",
     },
     target={
         "path": "s3://bronze/erp_vendas/dt={{ execution_date }}/vendas.parquet",
-        "format": "parquet"
+        "format": "parquet",
     },
     sql_transform="""
         SELECT 
@@ -24,8 +25,11 @@ stg_vendas_bronze = DataPipelineFactory.create_asset(
     """,
     expectations=[
         {"expectation": "ExpectColumnValuesToNotBeNull", "kwargs": {"column": "id"}},
-        {"expectation": "ExpectTableRowCountToBeBetween", "kwargs": {"min_value": 100, "max_value": 2000000}}
-    ]
+        {
+            "expectation": "ExpectTableRowCountToBeBetween",
+            "kwargs": {"min_value": 100, "max_value": 2000000},
+        },
+    ],
 )
 
 # --- 2. Silver Layer (Bronze -> Silver) ---
@@ -36,11 +40,11 @@ vendas_silver = DataPipelineFactory.create_asset(
     depends_on=["stg_vendas_bronze"],
     source={
         "path": "s3://bronze/erp_vendas/dt={{ execution_date }}/vendas.parquet",
-        "format": "parquet"
+        "format": "parquet",
     },
     target={
         "path": "s3://silver/vendas/dt={{ execution_date }}/vendas.parquet",
-        "format": "parquet"
+        "format": "parquet",
     },
     sql_transform="""
         SELECT 
@@ -50,6 +54,9 @@ vendas_silver = DataPipelineFactory.create_asset(
         WHERE preco > 0
     """,
     expectations=[
-        {"expectation": "ExpectColumnValuesToBeBetween", "kwargs": {"column": "preco", "min_value": 0, "max_value": 10000}}
-    ]
+        {
+            "expectation": "ExpectColumnValuesToBeBetween",
+            "kwargs": {"column": "preco", "min_value": 0, "max_value": 10000},
+        }
+    ],
 )

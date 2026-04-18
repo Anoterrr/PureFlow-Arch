@@ -1,6 +1,8 @@
 """Shared logger configuration for the PureFlow-Arch project."""
+
 import logging
 import sys
+
 
 def setup_logger():
     """Configures the global logger for the application."""
@@ -18,6 +20,7 @@ def setup_logger():
         new_logger.addHandler(handler)
 
     return new_logger
+
 
 # Initialize global logger
 logger = setup_logger()

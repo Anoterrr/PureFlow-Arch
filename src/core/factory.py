@@ -1,9 +1,12 @@
 """Factory Pattern for creating Data Pipelines as Dagster Assets."""
-from typing import List, Dict, Any, Optional
-from dagster import asset, AssetKey, MetadataValue, AssetsDefinition
+
+from typing import Any, Dict, List, Optional
+
+from dagster import AssetKey, AssetsDefinition, MetadataValue, asset
 
 from core.engine import PureFlowEngine
 from validation.gx_validator import validate_data
+
 
 class DataPipelineFactory:
     """Creates standardized Dagster Assets for data ingestion and transformation."""
@@ -22,7 +25,7 @@ class DataPipelineFactory:
         group_name: str = "default",
         sql_transform: Optional[str] = None,
         expectations: Optional[List[Dict[str, Any]]] = None,
-        depends_on: Optional[List[str]] = None
+        depends_on: Optional[List[str]] = None,
     ) -> AssetsDefinition:
         """
         Generates a Dagster Asset that moves data, transforms it, and validates it.
@@ -31,12 +34,7 @@ class DataPipelineFactory:
         # Define dependencies (Lineage)
         deps = [AssetKey([dep]) for dep in depends_on] if depends_on else []
 
-        @asset(
-            name=name,
-            group_name=group_name,
-            deps=deps,
-            compute_kind="duckdb"
-        )
+        @asset(name=name, group_name=group_name, deps=deps, compute_kind="duckdb")
         def generated_asset(context):
             # 1. Initialize Engine
             # We can get execution_date from Dagster's context partition if needed
@@ -48,15 +46,17 @@ class DataPipelineFactory:
                 source_format=source["format"],
                 target_path=target["path"],
                 target_format=target["format"],
-                sql_transform=sql_transform
+                sql_transform=sql_transform,
             )
 
             # 3. Add Metadata to Dagster
-            context.add_output_metadata({
-                "rows_processed": MetadataValue.int(result["row_count"]),
-                "target_path": MetadataValue.path(result["target_path"]),
-                "status": "Success"
-            })
+            context.add_output_metadata(
+                {
+                    "rows_processed": MetadataValue.int(result["row_count"]),
+                    "target_path": MetadataValue.path(result["target_path"]),
+                    "status": "Success",
+                }
+            )
 
             # 4. Optional Validation (Great Expectations)
             if expectations:
@@ -64,7 +64,7 @@ class DataPipelineFactory:
                     path=result["target_path"],
                     expectations=expectations,
                     format=target["format"],
-                    suite_name=f"suite_{name}"
+                    suite_name=f"suite_{name}",
                 )
 
                 # We can't return AssetCheckResult directly from an asset function
@@ -72,13 +72,15 @@ class DataPipelineFactory:
                 context.log.info(
                     "🛡️ Validation %s! Report: %s",
                     "Passed" if success else "FAILED",
-                    report_url
+                    report_url,
                 )
 
-                context.add_output_metadata({
-                    "quality_check": "Passed" if success else "FAILED",
-                    "gx_report": MetadataValue.url(report_url)
-                })
+                context.add_output_metadata(
+                    {
+                        "quality_check": "Passed" if success else "FAILED",
+                        "gx_report": MetadataValue.url(report_url),
+                    }
+                )
 
                 if not success:
                     raise ValueError(

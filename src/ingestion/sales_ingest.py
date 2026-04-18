@@ -1,13 +1,16 @@
 """Domain-specific Ingestion for Sales."""
+
 import os
 from abc import ABC, abstractmethod
 
-from core.connection import ConnectionFactory
 from core.config import get_s3_paths
+from core.connection import ConnectionFactory
 from core.logger import logger
+
 
 class BaseIngestor(ABC):
     """Abstract base class for domain-driven ingestion."""
+
     def __init__(self, domain: str):
         self.domain = domain
         self.factory = ConnectionFactory()
@@ -17,8 +20,10 @@ class BaseIngestor(ABC):
     def ingest(self):
         """Must be implemented by each domain."""
 
+
 class SalesIngestor(BaseIngestor):
     """Handles CSV-to-Parquet conversion for Sales domain."""
+
     def __init__(self):
         super().__init__("sales")
 
@@ -28,11 +33,12 @@ class SalesIngestor(BaseIngestor):
         self.factory.setup_s3_auth(conn)
 
         # S3 Landing path (input) and Bronze S3 path (output)
-        landing_csv = self.paths['vendas_landing']
-        bronze_parquet = self.paths['vendas_bronze']
+        landing_csv = self.paths["vendas_landing"]
+        bronze_parquet = self.paths["vendas_bronze"]
 
-        logger.info("🚀 [Sales Ingest] Processing: %s -> %s",
-                    landing_csv, bronze_parquet)
+        logger.info(
+            "🚀 [Sales Ingest] Processing: %s -> %s", landing_csv, bronze_parquet
+        )
 
         try:
             # Atomic operation: read CSV, add metadata, write Parquet to Bronze
@@ -53,6 +59,7 @@ class SalesIngestor(BaseIngestor):
             raise err
         finally:
             conn.close()
+
 
 if __name__ == "__main__":
     SalesIngestor().ingest()

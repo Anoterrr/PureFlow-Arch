@@ -1,7 +1,8 @@
 """Module for generating synthetic big data in Hive-partitioned structure."""
+
 import pandas as pd
 
-from core.config import get_s3_paths, BASE_DATE
+from core.config import BASE_DATE, get_s3_paths
 from core.connection import ConnectionFactory
 from core.logger import logger
 from utils.generators import generate_base_customers, generate_base_vendas
@@ -24,7 +25,10 @@ def generate_clean_big_data():
 
     df_customers = pd.DataFrame(customers)  # pylint: disable=unused-variable
 
-    logger.info("📤 Writing customers directly to Landing Zone: %s", s3_paths['clientes_landing'])
+    logger.info(
+        "📤 Writing customers directly to Landing Zone: %s",
+        s3_paths["clientes_landing"],
+    )
     conn.execute(
         f"COPY df_customers TO '{s3_paths['clientes_landing']}' (FORMAT 'JSON', ARRAY TRUE)"
     )
@@ -36,12 +40,16 @@ def generate_clean_big_data():
         n_vendas=n_vendas,
         n_customers=n_customers,
         amount_range=(10.0, 5000.0),
-        base_date=BASE_DATE
+        base_date=BASE_DATE,
     )
     df_vendas = pd.DataFrame(vendas)  # pylint: disable=unused-variable
 
-    logger.info("📤 Writing sales directly to Landing Zone: %s", s3_paths['vendas_landing'])
-    conn.execute(f"COPY df_vendas TO '{s3_paths['vendas_landing']}' (FORMAT 'CSV', HEADER TRUE)")
+    logger.info(
+        "📤 Writing sales directly to Landing Zone: %s", s3_paths["vendas_landing"]
+    )
+    conn.execute(
+        f"COPY df_vendas TO '{s3_paths['vendas_landing']}' (FORMAT 'CSV', HEADER TRUE)"
+    )
 
     conn.close()
     logger.info("✅ Clean Big Data generated and written to MinIO successfully!")

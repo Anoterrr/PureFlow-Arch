@@ -1,6 +1,8 @@
 """Unit tests for core utilities and generators."""
-from src.utils.generators import generate_base_customers, generate_base_vendas
+
 from src.core.config import get_s3_paths
+from src.utils.generators import generate_base_customers, generate_base_vendas
+
 
 def test_generate_base_customers():
     """Validates customer generator logic."""
@@ -11,6 +13,7 @@ def test_generate_base_customers():
     assert "name" in customers
     assert "region" in customers
     assert customers["region"][0] in ["North", "South", "East", "West", "Central"]
+
 
 def test_generate_base_vendas():
     """Validates sales generator logic and column naming."""
@@ -23,10 +26,12 @@ def test_generate_base_vendas():
     assert "sale_date" in vendas
     assert all(val >= 10 for val in vendas["sale_value"])
 
+
 def test_get_s3_paths():
     """Ensures S3 paths are correctly formatted."""
     paths = get_s3_paths("2024-01-01")
-    assert paths["vendas_landing"] == \
-        "s3://landing-zone/erp_vendas/dt=2024-01-01/vendas.csv"
-    assert paths["vendas_silver"] == \
-        "s3://silver/erp_vendas/dt=2024-01-01/"
+    assert (
+        paths["vendas_landing"]
+        == "s3://landing-zone/erp_vendas/dt=2024-01-01/vendas.csv"
+    )
+    assert paths["vendas_silver"] == "s3://silver/erp_vendas/dt=2024-01-01/"

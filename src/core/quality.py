@@ -1,8 +1,11 @@
 """Core Quality Engine: Integrates Great Expectations with DuckDB and S3."""
+
 import os
+
 import great_expectations as gx
 from great_expectations.core.expectation_suite import ExpectationSuite
 from sqlalchemy import event
+
 
 def get_gx_context():
     """Initializes and returns the GX context in the 'gx' directory."""
@@ -10,6 +13,7 @@ def get_gx_context():
     # Ensure necessary directories exist for GX Data Docs
     os.makedirs(os.path.join(context_root_dir, "uncommitted/data_docs"), exist_ok=True)
     return gx.get_context(context_root_dir=context_root_dir)
+
 
 def setup_gx_backend(context, datasource_name, factory):
     """
@@ -26,8 +30,7 @@ def setup_gx_backend(context, datasource_name, factory):
     except (ValueError, KeyError):
         # We use duckdb:///:memory: because GX only needs a processing engine
         datasource = context.data_sources.add_sql(
-            name=datasource_name,
-            connection_string="duckdb:///:memory:"
+            name=datasource_name, connection_string="duckdb:///:memory:"
         )
 
     engine = datasource.get_execution_engine().engine
@@ -51,6 +54,7 @@ def setup_gx_backend(context, datasource_name, factory):
     factory.setup_s3_auth(raw_conn)
 
     return datasource, raw_conn
+
 
 def get_or_create_suite(context, suite_name):
     """Abstraction for GX suite management."""

@@ -459,46 +459,6 @@ files = [
 ]
 
 [[package]]
-name = "boto3"
-version = "1.42.78"
-description = "The AWS SDK for Python"
-optional = false
-python-versions = ">=3.9"
-groups = ["main"]
-files = [
-    {file = "boto3-1.42.78-py3-none-any.whl", hash = "sha256:480a34a077484a5ca60124dfd150ba3ea6517fc89963a679e45b30c6db614d26"},
-    {file = "boto3-1.42.78.tar.gz", hash = "sha256:cef2ebdb9be5c0e96822f8d3941ac4b816c90a5737a7ffb901d664c808964b63"},
-]
-
-[package.dependencies]
-botocore = ">=1.42.78,<1.43.0"
-jmespath = ">=0.7.1,<2.0.0"
-s3transfer = ">=0.16.0,<0.17.0"
-
-[package.extras]
-crt = ["botocore[crt] (>=1.21.0,<2.0a0)"]
-
-[[package]]
-name = "botocore"
-version = "1.42.78"
-description = "Low-level, data-driven core of boto 3."
-optional = false
-python-versions = ">=3.9"
-groups = ["main"]
-files = [
-    {file = "botocore-1.42.78-py3-none-any.whl", hash = "sha256:038ab63c7f898e8b5db58cb6a45e4da56c31dd984e7e995839a3540c735564ea"},
-    {file = "botocore-1.42.78.tar.gz", hash = "sha256:61cbd49728e23f68cfd945406ab40044d49abed143362f7ffa4a4f4bd4311791"},
-]
-
-[package.dependencies]
-jmespath = ">=0.7.1,<2.0.0"
-python-dateutil = ">=2.1,<3.0.0"
-urllib3 = {version = ">=1.25.4,<2.2.0 || >2.2.0,<3", markers = "python_version >= \"3.10\""}
-
-[package.extras]
-crt = ["awscrt (==0.31.2)"]
-
-[[package]]
 name = "cachetools"
 version = "7.0.5"
 description = "Extensible memoizing collections and decorators"
@@ -1027,27 +987,6 @@ test = ["dagster-duckdb (==0.29.0)", "dagster-duckdb-pandas (==0.29.0)", "dbt-du
 test-bare = ["pytest-order", "pytest-rerunfailures"]
 
 [[package]]
-name = "dagster-ge"
-version = "0.29.0"
-description = "Package for GE-specific Dagster framework op and resource components."
-optional = false
-python-versions = "<3.14,>=3.10"
-groups = ["main"]
-files = [
-    {file = "dagster_ge-0.29.0-py3-none-any.whl", hash = "sha256:9d59bb2c918a6d5ed49ee9ab556be1bfe6d123a1865903a6f33a603215273d5a"},
-    {file = "dagster_ge-0.29.0.tar.gz", hash = "sha256:94e14473e745a1957b4d327d2e3db0df0523970bc9f5d286b4a5ac91f4c89f5a"},
-]
-
-[package.dependencies]
-dagster = "1.13.0"
-dagster-pandas = "0.29.0"
-great-expectations = ">=0.17.15,<1.0.0"
-pandas = "<3.0.0"
-
-[package.extras]
-test = ["great-expectations (>=0.18.22)"]
-
-[[package]]
 name = "dagster-graphql"
 version = "1.13.0"
 description = "The GraphQL API for Dagster."
@@ -1068,22 +1007,6 @@ starlette = "*"
 
 [package.extras]
 test = ["dagster-test"]
-
-[[package]]
-name = "dagster-pandas"
-version = "0.29.0"
-description = "Utilities and examples for working with pandas and dagster, an opinionated framework for expressing data pipelines"
-optional = false
-python-versions = "<3.15,>=3.10"
-groups = ["main"]
-files = [
-    {file = "dagster_pandas-0.29.0-py3-none-any.whl", hash = "sha256:2bc50f5719a273ef6fae9823e760f6d177d11e0ae9eded2d7136adc160de4bac"},
-    {file = "dagster_pandas-0.29.0.tar.gz", hash = "sha256:2e94d4e88870fba28515f09f18ea7c6a55cea40c47f7ab12c7677af292b7c7ea"},
-]
-
-[package.dependencies]
-dagster = "1.13.0"
-pandas = "<3.0.0"
 
 [[package]]
 name = "dagster-pipes"
@@ -2438,18 +2361,6 @@ files = [
 
 [package.dependencies]
 Jinja2 = ">=2.10"
-
-[[package]]
-name = "jmespath"
-version = "1.1.0"
-description = "JSON Matching Expressions"
-optional = false
-python-versions = ">=3.9"
-groups = ["main"]
-files = [
-    {file = "jmespath-1.1.0-py3-none-any.whl", hash = "sha256:a5663118de4908c91729bea0acadca56526eb2698e83de10cd116ae0f4e97c64"},
-    {file = "jmespath-1.1.0.tar.gz", hash = "sha256:472c87d80f36026ae83c6ddd0f1d05d4e510134ed462851fd5f754c8c3cbb88d"},
-]
 
 [[package]]
 name = "json5"
@@ -5321,24 +5232,6 @@ files = [
 ]
 
 [[package]]
-name = "s3transfer"
-version = "0.16.0"
-description = "An Amazon S3 Transfer Manager"
-optional = false
-python-versions = ">=3.9"
-groups = ["main"]
-files = [
-    {file = "s3transfer-0.16.0-py3-none-any.whl", hash = "sha256:18e25d66fed509e3868dc1572b3f427ff947dd2c56f844a5bf09481ad3f3b2fe"},
-    {file = "s3transfer-0.16.0.tar.gz", hash = "sha256:8e990f13268025792229cd52fa10cb7163744bf56e719e0b9cb925ab79abf920"},
-]
-
-[package.dependencies]
-botocore = ">=1.37.4,<2.0a0"
-
-[package.extras]
-crt = ["botocore[crt] (>=1.37.4,<2.0a0)"]
-
-[[package]]
 name = "scipy"
 version = "1.17.1"
 description = "Fundamental algorithms for scientific computing in Python"
@@ -6930,4 +6823,4 @@ type = ["pytest-mypy"]
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.11, <3.13"
-content-hash = "96acf76cce9025f4e0469eeaf14688652cbbf28f355ea1eb1bf95fae8e7e8c46"
+content-hash = "8af93c8a4f2eaf960b2a50eade9d56963746576787132227d65de4a2af1da97b"

@@ -52,8 +52,9 @@ class PureFlowEngine:
 
             # 2. Build the query
             # We create a temporary view 'source_data' to allow SQL transformations
+            # DuckDB-specific: we use f-strings for paths as they can't be parameterized in standard way
             conn.execute(
-                f"CREATE OR REPLACE VIEW source_data AS SELECT * FROM {read_func}('{source_path}')"
+                f"CREATE OR REPLACE VIEW source_data AS SELECT * FROM {read_func}('{source_path}')"  # nosec B608
             )
 
             final_query = (

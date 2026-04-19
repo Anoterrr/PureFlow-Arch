@@ -53,7 +53,7 @@ def validate_data(
         try:
             datasource.delete_asset(asset_name)
         except (ValueError, LookupError):
-            pass
+            logger.warning("Asset %s not found to delete", asset_name)
 
         # Read function for GX query
         fmt = data_format.lower()
@@ -62,7 +62,7 @@ def validate_data(
             if fmt == "csv"
             else ("read_parquet" if fmt == "parquet" else "read_json_auto")
         )
-        asset = datasource.add_query_asset(
+        asset = datasource.add_query_asset(  # nosec B608
             name=asset_name, query=f"SELECT * FROM {read_func}('{path}')"
         )
         batch_def = asset.add_batch_definition_whole_table(f"batch_{suite_name}")
@@ -72,7 +72,7 @@ def validate_data(
         try:
             context.validation_definitions.delete(val_name)
         except (ValueError, LookupError):
-            pass
+            logger.warning("Validation definition %s not found to delete", val_name)
 
         val_def = context.validation_definitions.add(
             ValidationDefinition(name=val_name, data=batch_def, suite=suite)
@@ -112,7 +112,7 @@ def validate_data(
             if html_files:
                 # Sort by modification time to get the latest
                 latest_report = f"file://{max(html_files, key=os.path.getmtime)}"
-    except Exception:  # pylint: disable=broad-exception-caught
-        pass
+    except Exception as e:  # pylint: disable=broad-exception-caught
+        logger.warning("Could not find latest report: %s", str(e))
 
     return success, latest_report

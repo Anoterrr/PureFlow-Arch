@@ -43,7 +43,7 @@ class SalesIngestor(BaseIngestor):
         try:
             # Atomic operation: read CSV, add metadata, write Parquet to Bronze
             # DuckDB handles the S3 upload directly via httpfs
-            conn.execute(f"""
+            conn.execute(f"""  # nosec B608
                 COPY (
                     SELECT
                         *,

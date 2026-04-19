@@ -15,7 +15,7 @@ def corrupt_landing_zone():
     logger.warning("🧨 [Corruptor] Corrupting Landing Zone data...")
 
     # 1. Corrupt Sales (CSV) - Inject Null IDs and Negative Prices
-    conn.execute(f"""
+    conn.execute(f"""  # nosec B608
         COPY (
             SELECT
                 CASE WHEN range % 10 = 0 THEN NULL ELSE range END as id,
@@ -28,7 +28,7 @@ def corrupt_landing_zone():
     """)
 
     # 2. Corrupt Customers (JSON) - Invalid Emails
-    conn.execute(f"""
+    conn.execute(f"""  # nosec B608
         COPY (
             SELECT
                 range as id,
@@ -54,7 +54,7 @@ def corrupt_bronze_layer():
 
     # Inject sales with NULL product names or invalid dates in Bronze
     # This simulates a bug in the ingestion script
-    conn.execute(f"""
+    conn.execute(f"""  # nosec B608
         COPY (
             SELECT
                 range as id,

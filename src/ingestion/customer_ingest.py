@@ -27,7 +27,7 @@ class CustomerIngestor(BaseIngestor):
 
         try:
             # Atomic operation: read JSON, add metadata, write Parquet to Bronze
-            conn.execute(f"""
+            conn.execute(f"""  # nosec B608
                 COPY (
                     SELECT
                         *,

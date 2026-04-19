@@ -9,15 +9,15 @@ from dagster import (
     Definitions,
     asset,
     define_asset_job,
-    load_assets_from_package_name,
     load_assets_from_current_module,
+    load_assets_from_package_name,
 )
 from dagster_dbt import DagsterDbtTranslator, DbtCliResource, dbt_assets
 
 # Import data generators and corruptors
 from utils.generate_clean_data import generate_clean_big_data
+from utils.generate_corrupt_data import corrupt_bronze_layer, corrupt_landing_zone
 from utils.generate_dirty_data import generate_dirty_big_data
-from utils.generate_corrupt_data import corrupt_landing_zone, corrupt_bronze_layer
 
 # --- 1. dbt Configuration with Lineage Mapping ---
 DBT_PROJECT_DIR = Path(__file__).joinpath("..", "..", "dbt").resolve()
@@ -92,9 +92,10 @@ pureflow_pipeline_job = define_asset_job(  # pylint: disable=assignment-from-no-
 
 # Specific job to test Quality Gates by corrupting and then running the pipeline
 # This will likely fail (red) and allow clicking the GX report link
-quality_test_job = define_asset_job(
+quality_test_job = define_asset_job(  # pylint: disable=assignment-from-no-return
     name="quality_test_job",
-    selection=AssetSelection.groups("test_quality") | AssetSelection.groups("bronze", "silver")
+    selection=AssetSelection.groups("test_quality")
+    | AssetSelection.groups("bronze", "silver"),
 )
 
 # Dynamic asset discovery:
@@ -108,5 +109,5 @@ all_assets = [
 defs = Definitions(
     assets=all_assets,
     resources={"dbt": dbt},
-    jobs=[pureflow_pipeline_job, quality_test_job]
+    jobs=[pureflow_pipeline_job, quality_test_job],
 )

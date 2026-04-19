@@ -92,10 +92,14 @@ def validate_data(
     # Dynamic path to the generated Data Docs for this specific suite
     # GX organizes docs by: local_site/validations/<suite_name>/<timestamp>/<hash>.html
     # For simplicity in this TCC environment, we point to the suite's index or the latest run
-    report_path = os.path.abspath(f"gx/uncommitted/data_docs/local_site/validations/{suite_name}")
-    
+    report_path = os.path.abspath(
+        f"gx/uncommitted/data_docs/local_site/validations/{suite_name}"
+    )
+
     # Try to find the most recent HTML report in the subdirectories
-    latest_report = f"file://{os.path.abspath('gx/uncommitted/data_docs/local_site/index.html')}"
+    latest_report = (
+        f"file://{os.path.abspath('gx/uncommitted/data_docs/local_site/index.html')}"
+    )
     try:
         if os.path.exists(report_path):
             # Find all .html files in the validations directory for this suite
@@ -104,11 +108,11 @@ def validate_data(
                 for file in files:
                     if file.endswith(".html"):
                         html_files.append(os.path.join(root, file))
-            
+
             if html_files:
                 # Sort by modification time to get the latest
                 latest_report = f"file://{max(html_files, key=os.path.getmtime)}"
-    except Exception: # pylint: disable=broad-exception-caught
+    except Exception:  # pylint: disable=broad-exception-caught
         pass
 
     return success, latest_report

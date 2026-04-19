@@ -12,7 +12,7 @@
     {
       "id": "1396b40d-f00f-4e66-9feb-7c4bfbecf3a4",
       "kwargs": {
-        "column": "sale_value",
+        "column": "price",
         "min_value": 0.0
       },
       "meta": {},

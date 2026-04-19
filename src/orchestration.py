@@ -9,17 +9,10 @@ from dagster import (
     Definitions,
     asset,
     define_asset_job,
+    load_assets_from_package_name,
+    load_assets_from_current_module,
 )
 from dagster_dbt import DagsterDbtTranslator, DbtCliResource, dbt_assets
-
-from pipelines.customers import clientes_silver, stg_clientes_bronze
-
-# Import our new Factory-based assets
-from pipelines.sales import stg_vendas_bronze, vendas_silver
-
-# Import data generators
-from utils.generate_clean_data import generate_clean_big_data
-from utils.generate_dirty_data import generate_dirty_big_data
 
 # --- 1. dbt Configuration with Lineage Mapping ---
 DBT_PROJECT_DIR = Path(__file__).joinpath("..", "..", "dbt").resolve()
@@ -60,6 +53,7 @@ def pureflow_dbt_assets(context, dbt_resource: DbtCliResource):
 @asset(group_name="landing", compute_kind="python")
 def generate_clean_data(context):
     """Generates CLEAN synthetic data in the Landing Zone."""
+    from utils.generate_clean_data import generate_clean_big_data
     generate_clean_big_data()
     context.log.info("✅ CLEAN data generated successfully.")
 
@@ -67,35 +61,28 @@ def generate_clean_data(context):
 @asset(group_name="landing", compute_kind="python")
 def generate_dirty_data(context):
     """Generates DIRTY synthetic data to test Quality Gates."""
+    from utils.generate_dirty_data import generate_dirty_big_data
     generate_dirty_big_data()
     context.log.info("⚠️ DIRTY data generated. Quality Gates should trigger.")
 
 
 # --- 3. Jobs & Definitions ---
 
-ingestion_clean_job = define_asset_job(
-    name="ingestion_clean_job", selection=AssetSelection.assets(generate_clean_data)
-)
-
-ingestion_dirty_job = define_asset_job(
-    name="ingestion_dirty_job", selection=AssetSelection.assets(generate_dirty_data)
-)
-
 # Main Transformation Pipeline (Now includes generation and transformation)
-pureflow_pipeline_job = define_asset_job(
+pureflow_pipeline_job = define_asset_job(  # pylint: disable=assignment-from-no-return
     name="pureflow_pipeline_job", selection=AssetSelection.all()
 )
 
+# Dynamic asset discovery:
+# 1. Scans the 'pipelines' package for assets created via Factory
+# 2. Scans the current module for dbt assets and local generator assets
 all_assets = [
-    generate_clean_data,
-    generate_dirty_data,
-    stg_vendas_bronze,
-    vendas_silver,
-    stg_clientes_bronze,
-    clientes_silver,
-    pureflow_dbt_assets,
+    *load_assets_from_package_name("pipelines"),
+    *load_assets_from_current_module(),
 ]
 
 defs = Definitions(
-    assets=all_assets, resources={"dbt": dbt}, jobs=[pureflow_pipeline_job]
+    assets=all_assets,
+    resources={"dbt": dbt},
+    jobs=[pureflow_pipeline_job]
 )

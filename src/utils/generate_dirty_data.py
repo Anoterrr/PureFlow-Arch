@@ -5,7 +5,7 @@ import pandas as pd
 from core.config import BASE_DATE, get_s3_paths
 from core.connection import ConnectionFactory
 from core.logger import logger
-from utils.generators import generate_base_customers, generate_base_vendas
+from utils.generators import generate_base_customers, generate_base_sales
 
 
 def generate_dirty_big_data():
@@ -28,26 +28,26 @@ def generate_dirty_big_data():
 
     logger.info("📤 Writing dirty customers to Landing Zone...")
     conn.execute(
-        f"COPY df_customers TO '{s3_paths['clientes_landing']}' (FORMAT 'JSON', ARRAY TRUE)"
+        f"COPY df_customers TO '{s3_paths['customers_landing']}' (FORMAT 'JSON', ARRAY TRUE)"
     )
 
     # 2. Generate Dirty Sales (Negative values, invalid dates)
-    n_vendas = 5000
-    logger.info("🚀 Generating %d sales records (DIRTY)...", n_vendas)
-    vendas = generate_base_vendas(
-        n_vendas=n_vendas,
+    n_sales = 5000
+    logger.info("🚀 Generating %d sales records (DIRTY)...", n_sales)
+    sales = generate_base_sales(
+        n_sales=n_sales,
         n_customers=n_customers,
         amount_range=(-500.0, 5000.0),  # Intentional negative values
         base_date=BASE_DATE,
     )
-    df_vendas = pd.DataFrame(vendas)
+    df_sales = pd.DataFrame(sales)
 
     # Introduce Nulls in IDs
-    df_vendas.loc[0:50, "id"] = None
+    df_sales.loc[0:50, "id"] = None
 
     logger.info("📤 Writing dirty sales to Landing Zone...")
     conn.execute(
-        f"COPY df_vendas TO '{s3_paths['vendas_landing']}' (FORMAT 'CSV', HEADER TRUE)"
+        f"COPY df_sales TO '{s3_paths['sales_landing']}' (FORMAT 'CSV', HEADER TRUE)"
     )
 
     conn.close()

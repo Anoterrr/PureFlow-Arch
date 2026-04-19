@@ -8,24 +8,24 @@ from core.factory import DataPipelineFactory
 SQL_DIR = os.path.join("src", "sql", "customers")
 
 # --- Bronze Layer ---
-stg_clientes_bronze = DataPipelineFactory.create_asset(
-    name="stg_clientes_bronze",
+stg_customers_bronze = DataPipelineFactory.create_asset(
+    name="stg_customers_bronze",
     group_name="bronze",
     source={
-        "path": "s3://landing-zone/crm_clientes/dt={{ execution_date }}/clientes.json",
+        "path": "s3://landing-zone/customers_crm/dt={{ execution_date }}/customers.json",
         "format": "json",
     },
     target={
-        "path": "s3://bronze/crm_clientes/dt={{ execution_date }}/clientes.parquet",
+        "path": "s3://bronze/customers_crm/dt={{ execution_date }}/customers.parquet",
         "format": "parquet",
     },
     sql_transform=DataPipelineFactory.load_sql(
-        os.path.join(SQL_DIR, "stg_clientes_bronze.sql")
+        os.path.join(SQL_DIR, "stg_customers_bronze.sql")
     ),
     expectations=[
         {
             "expectation": "ExpectColumnValuesToNotBeNull",
-            "kwargs": {"column": "cliente_id"},
+            "kwargs": {"column": "customer_id"},
         },
         {
             "expectation": "ExpectColumnValuesToMatchRegex",
@@ -35,19 +35,19 @@ stg_clientes_bronze = DataPipelineFactory.create_asset(
 )
 
 # --- Silver Layer ---
-clientes_silver = DataPipelineFactory.create_asset(
-    name="clientes_silver",
+customers_silver = DataPipelineFactory.create_asset(
+    name="customers_silver",
     group_name="silver",
-    depends_on=["stg_clientes_bronze"],
+    depends_on=["stg_customers_bronze"],
     source={
-        "path": "s3://bronze/crm_clientes/dt={{ execution_date }}/clientes.parquet",
+        "path": "s3://bronze/customers_crm/dt={{ execution_date }}/customers.parquet",
         "format": "parquet",
     },
     target={
-        "path": "s3://silver/clientes/dt={{ execution_date }}/clientes.parquet",
+        "path": "s3://silver/customers/dt={{ execution_date }}/customers.parquet",
         "format": "parquet",
     },
     sql_transform=DataPipelineFactory.load_sql(
-        os.path.join(SQL_DIR, "clientes_silver.sql")
+        os.path.join(SQL_DIR, "customers_silver.sql")
     ),
 )

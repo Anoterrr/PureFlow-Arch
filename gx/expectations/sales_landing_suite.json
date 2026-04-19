@@ -12,7 +12,7 @@
     {
       "id": "88bbcd97-7aa0-4429-b31b-733beee77159",
       "kwargs": {
-        "column": "sale_value",
+        "column": "price",
         "min_value": 0.01
       },
       "meta": {},
@@ -22,7 +22,7 @@
     {
       "id": "bfce59ab-d9c0-4111-b5de-8c308da6e688",
       "kwargs": {
-        "column": "sale_date",
+        "column": "date",
         "strftime_format": "%Y-%m-%d"
       },
       "meta": {},
@@ -34,6 +34,6 @@
   "meta": {
     "great_expectations_version": "1.15.1"
   },
-  "name": "vendas_landing_suite",
+  "name": "sales_landing_suite",
   "notes": null
 }

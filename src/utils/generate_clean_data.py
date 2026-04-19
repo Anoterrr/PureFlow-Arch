@@ -5,7 +5,7 @@ import pandas as pd
 from core.config import BASE_DATE, get_s3_paths
 from core.connection import ConnectionFactory
 from core.logger import logger
-from utils.generators import generate_base_customers, generate_base_vendas
+from utils.generators import generate_base_customers, generate_base_sales
 
 
 def generate_clean_big_data():
@@ -17,7 +17,7 @@ def generate_clean_big_data():
 
     s3_paths = get_s3_paths()
 
-    # 2. Generate clean crm_clientes (~100k rows)
+    # 2. Generate clean customers_crm (~100k rows)
     n_customers = 100_000
     logger.info("🚀 Generating %d customers (CLEAN)...", n_customers)
     customers = generate_base_customers(n_customers)
@@ -27,28 +27,28 @@ def generate_clean_big_data():
 
     logger.info(
         "📤 Writing customers directly to Landing Zone: %s",
-        s3_paths["clientes_landing"],
+        s3_paths["customers_landing"],
     )
     conn.execute(
-        f"COPY df_customers TO '{s3_paths['clientes_landing']}' (FORMAT 'JSON', ARRAY TRUE)"
+        f"COPY df_customers TO '{s3_paths['customers_landing']}' (FORMAT 'JSON', ARRAY TRUE)"
     )
 
-    # 3. Generate clean erp_vendas (~1M rows)
-    n_vendas = 1_000_000
-    logger.info("🚀 Generating %d sales records (CLEAN)...", n_vendas)
-    vendas = generate_base_vendas(
-        n_vendas=n_vendas,
+    # 3. Generate clean sales_erp (~1M rows)
+    n_sales = 1_000_000
+    logger.info("🚀 Generating %d sales records (CLEAN)...", n_sales)
+    sales = generate_base_sales(
+        n_sales=n_sales,
         n_customers=n_customers,
         amount_range=(10.0, 5000.0),
         base_date=BASE_DATE,
     )
-    df_vendas = pd.DataFrame(vendas)  # pylint: disable=unused-variable
+    df_sales = pd.DataFrame(sales)  # pylint: disable=unused-variable
 
     logger.info(
-        "📤 Writing sales directly to Landing Zone: %s", s3_paths["vendas_landing"]
+        "📤 Writing sales directly to Landing Zone: %s", s3_paths["sales_landing"]
     )
     conn.execute(
-        f"COPY df_vendas TO '{s3_paths['vendas_landing']}' (FORMAT 'CSV', HEADER TRUE)"
+        f"COPY df_sales TO '{s3_paths['sales_landing']}' (FORMAT 'CSV', HEADER TRUE)"
     )
 
     conn.close()

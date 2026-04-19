@@ -1,8 +1,8 @@
 -- Bronze transformation for Customers (Raw to Bronze)
 SELECT 
-    id as cliente_id, 
-    nome, 
+    id as customer_id, 
+    name, 
     email, 
-    cidade,
-    estado 
+    city,
+    state 
 FROM source_data

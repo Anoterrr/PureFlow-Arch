@@ -33,8 +33,8 @@ class SalesIngestor(BaseIngestor):
         self.factory.setup_s3_auth(conn)
 
         # S3 Landing path (input) and Bronze S3 path (output)
-        landing_csv = self.paths["vendas_landing"]
-        bronze_parquet = self.paths["vendas_bronze"]
+        landing_csv = self.paths["sales_landing"]
+        bronze_parquet = self.paths["sales_bronze"]
 
         logger.info(
             "🚀 [Sales Ingest] Processing: %s -> %s", landing_csv, bronze_parquet

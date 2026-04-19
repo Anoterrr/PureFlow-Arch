@@ -20,6 +20,7 @@ st.markdown(
 # --- Database Setup ---
 @st.cache_resource
 def get_duckdb_conn():
+    """Initializes and returns a DuckDB connection configured for S3/MinIO access."""
     conn = duckdb.connect(database=":memory:")
 
     # Configure S3/MinIO
@@ -39,6 +40,7 @@ def get_duckdb_conn():
 
 # --- Data Loading ---
 def load_gold_data():
+    """Loads gold sales summary data from S3 into a pandas DataFrame."""
     conn = get_duckdb_conn()
     # Path to your latest Gold aggregation
     # Note: In a real scenario, we would use a dynamic date
@@ -47,7 +49,7 @@ def load_gold_data():
 
     try:
         return conn.execute(f"SELECT * FROM read_parquet('{gold_path}')").df()
-    except Exception as e:
+    except Exception as e:  # pylint: disable=broad-exception-caught
         st.error(f"Error loading gold data: {e}")
         return pd.DataFrame()
 

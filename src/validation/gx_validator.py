@@ -1,9 +1,10 @@
 """Generic validation engine using Great Expectations (GX)."""
 
 import os
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Tuple
 
 import great_expectations as gx
+from great_expectations.core.validation_definition import ValidationDefinition
 
 from core.connection import ConnectionFactory
 from core.logger import logger
@@ -13,13 +14,14 @@ from core.quality import get_gx_context, get_or_create_suite, setup_gx_backend
 def validate_data(
     path: str,
     expectations: List[Dict[str, Any]],
-    format: str = "parquet",
+    data_format: str = "parquet",
     suite_name: str = "dynamic_suite",
-) -> (bool, str):
+) -> Tuple[bool, str]:
     """
     Generic execution engine for validation.
     Returns (success: bool, report_url: str).
     """
+    # pylint: disable=too-many-locals
     factory = ConnectionFactory()
     context = get_gx_context()
 
@@ -27,7 +29,7 @@ def validate_data(
     datasource_name = f"ds_{suite_name}"
     datasource, raw_conn = setup_gx_backend(context, datasource_name, factory)
 
-    logger.info(f"🛡️ [Validator] Validating data at {path}...")
+    logger.info("🛡️ [Validator] Validating data at %s...", path)
 
     success = True
     try:
@@ -35,33 +37,30 @@ def validate_data(
         suite = get_or_create_suite(context, suite_name)
 
         for check in expectations:
-            # Map simple dictionaries to GX expectations if needed,
-            # or assume they are already GX expectation objects.
-            # Here we support a simple dict format: {"expectation": "name", "kwargs": {...}}
             exp_name = check.get("expectation")
             kwargs = check.get("kwargs", {})
 
-            # Use getattr to find the expectation class in gx.expectations
             try:
                 exp_class = getattr(gx.expectations, exp_name)
                 suite.add_expectation(exp_class(**kwargs))
-            except Exception as e:
+            except (AttributeError, TypeError) as e:
                 logger.warning(
-                    f"⚠️ [Validator] Could not add expectation {exp_name}: {str(e)}"
+                    "⚠️ [Validator] Could not add expectation %s: %s", exp_name, str(e)
                 )
 
         # 2. Setup Data Asset
         asset_name = f"asset_{suite_name}"
         try:
             datasource.delete_asset(asset_name)
-        except:
+        except (ValueError, LookupError):
             pass
 
         # Read function for GX query
+        fmt = data_format.lower()
         read_func = (
             "read_csv_auto"
-            if format.lower() == "csv"
-            else ("read_parquet" if format.lower() == "parquet" else "read_json_auto")
+            if fmt == "csv"
+            else ("read_parquet" if fmt == "parquet" else "read_json_auto")
         )
         asset = datasource.add_query_asset(
             name=asset_name, query=f"SELECT * FROM {read_func}('{path}')"
@@ -69,12 +68,10 @@ def validate_data(
         batch_def = asset.add_batch_definition_whole_table(f"batch_{suite_name}")
 
         # 3. Run Validation
-        from great_expectations.core.validation_definition import ValidationDefinition
-
         val_name = f"val_{suite_name}"
         try:
             context.validation_definitions.delete(val_name)
-        except:
+        except (ValueError, LookupError):
             pass
 
         val_def = context.validation_definitions.add(
@@ -86,8 +83,8 @@ def validate_data(
 
         context.build_data_docs()
 
-    except Exception as e:
-        logger.error(f"❌ [Validator] Validation failed: {str(e)}")
+    except Exception as e:  # pylint: disable=broad-exception-caught
+        logger.error("❌ [Validator] Validation failed: %s", str(e))
         success = False
     finally:
         raw_conn.close()

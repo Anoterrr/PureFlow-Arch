@@ -85,16 +85,16 @@ fluent_datasources:
     type: sql
     id: 1ff47a5e-d7e9-4878-95a1-5b0764b7b1b1
     assets:
-      vendas_landing_asset:
+      sales_landing_asset:
         type: query
         id: 77d0def9-321d-45a1-b6c1-0c48b15a2115
         batch_metadata: {}
         batch_definitions:
-          vendas_batch_def:
+          sales_batch_def:
             id: 391a89f4-41c2-4f32-96ff-3731612c9240
             partitioner:
         query: SELECT * FROM 
-          read_csv_auto('data/minio_data/landing-zone/erp_vendas/dt=2024-03-29/vendas.csv')
+          read_csv_auto('data/minio_data/landing-zone/sales_erp/dt=2024-03-29/sales.csv')
     connection_string: 'duckdb:///:memory:'
   sales_quality_datasource:
     type: sql
@@ -109,7 +109,7 @@ fluent_datasources:
             id: b397bc70-92e1-4e6a-bdd3-aa9e23478165
             partitioner:
         query: SELECT * FROM 
-          read_parquet('s3://bronze/erp_vendas/dt=2026-04-14/vendas.parquet')
+          read_parquet('s3://bronze/sales_erp/dt=2026-04-14/sales.parquet')
     connection_string: 'duckdb:///:memory:'
 analytics_enabled:
 data_context_id: cb18d2b6-ff70-402b-a6c5-4ad1ee031c46

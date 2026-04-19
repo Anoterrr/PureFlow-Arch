@@ -18,8 +18,8 @@ class CustomerIngestor(BaseIngestor):
         self.factory.setup_s3_auth(conn)
 
         # S3 Landing path (input) and Bronze S3 path (output)
-        landing_json = self.paths["clientes_landing"]
-        bronze_parquet = self.paths["clientes_bronze"]
+        landing_json = self.paths["customers_landing"]
+        bronze_parquet = self.paths["customers_bronze"]
 
         logger.info(
             "🚀 [Customer Ingest] Processing: %s -> %s", landing_json, bronze_parquet

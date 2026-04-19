@@ -63,10 +63,9 @@ class DataPipelineFactory:
                 success, report_url = validate_data(
                     path=result["target_path"],
                     expectations=expectations,
-                    format=target["format"],
+                    data_format=target["format"],
                     suite_name=f"suite_{name}",
                 )
-
                 # We can't return AssetCheckResult directly from an asset function
                 # without @asset_check, but we can log and add metadata.
                 context.log.info(

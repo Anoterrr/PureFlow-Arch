@@ -14,6 +14,10 @@ from dagster import (
 )
 from dagster_dbt import DagsterDbtTranslator, DbtCliResource, dbt_assets
 
+# Import data generators for the landing assets
+from utils.generate_clean_data import generate_clean_big_data
+from utils.generate_dirty_data import generate_dirty_big_data
+
 # --- 1. dbt Configuration with Lineage Mapping ---
 DBT_PROJECT_DIR = Path(__file__).joinpath("..", "..", "dbt").resolve()
 dbt = DbtCliResource(project_dir=os.fspath(DBT_PROJECT_DIR))

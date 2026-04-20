@@ -1,6 +1,6 @@
 {{ config(
     materialized='external',
-    location="s3://gold/sales_summary/dt=" ~ var('execution_date', '2026-04-18') ~ "/sales_summary.parquet",
+    location="s3://gold/sales_summary/dt=" ~ var('execution_date') ~ "/sales_summary.parquet",
     format='parquet'
 ) }}
 

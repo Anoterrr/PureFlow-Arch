@@ -7,7 +7,7 @@ sources:
     tables:
       - name: sales_silver
         description: "Sales transactions cleaned and validated by PureFlow Factory."
-        external_location: "s3://silver/sales/dt={{ var('execution_date', '2026-04-18') }}/sales.parquet"
+        external_location: "s3://silver/sales/dt={{ var('execution_date') }}/sales.parquet"
       - name: customers_silver
         description: "Customer data cleaned and validated by PureFlow Factory."
-        external_location: "s3://silver/customers/dt={{ var('execution_date', '2026-04-18') }}/customers.parquet"
+        external_location: "s3://silver/customers/dt={{ var('execution_date') }}/customers.parquet"

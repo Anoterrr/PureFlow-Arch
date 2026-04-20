@@ -15,7 +15,8 @@ def corrupt_landing_zone():
     logger.warning("🧨 [Corruptor] Corrupting Landing Zone data...")
 
     # 1. Corrupt Sales (CSV) - Inject Null IDs and Negative Prices
-    conn.execute(f"""  # nosec B608
+    conn.execute(
+        """
         COPY (
             SELECT
                 CASE WHEN range % 10 = 0 THEN NULL ELSE range END as id,
@@ -24,20 +25,25 @@ def corrupt_landing_zone():
                 1 as cliente_id,
                 'Produto Corrompido' as produto
             FROM range(1, 1001)
-        ) TO '{s3_paths["sales_landing"]}' (FORMAT 'CSV', HEADER TRUE)
-    """)
+        ) TO ? (FORMAT 'CSV', HEADER TRUE)
+        """,
+        [s3_paths["sales_landing"]],
+    )
 
     # 2. Corrupt Customers (JSON) - Invalid Emails
-    conn.execute(f"""  # nosec B608
+    conn.execute(
+        """
         COPY (
             SELECT
                 range as id,
                 'invalid-email-' || range as email,
                 'User ' || range as name,
-                '{BASE_DATE}' as created_at
+                ? as created_at
             FROM range(1, 501)
-        ) TO '{s3_paths["customers_landing"]}' (FORMAT 'JSON', ARRAY TRUE)
-    """)
+        ) TO ? (FORMAT 'JSON', ARRAY TRUE)
+        """,
+        [BASE_DATE, s3_paths["customers_landing"]],
+    )
 
     conn.close()
     logger.info("✅ Landing Zone corrupted.")
@@ -54,7 +60,8 @@ def corrupt_bronze_layer():
 
     # Inject sales with NULL product names or invalid dates in Bronze
     # This simulates a bug in the ingestion script
-    conn.execute(f"""  # nosec B608
+    conn.execute(
+        """
         COPY (
             SELECT
                 range as id,
@@ -66,8 +73,10 @@ def corrupt_bronze_layer():
                 'sales' as _domain,
                 'corrupted_ingest.csv' as _source_file
             FROM range(10000, 10500)
-        ) TO '{s3_paths["sales_bronze"]}' (FORMAT 'PARQUET')
-    """)
+        ) TO ? (FORMAT 'PARQUET')
+        """,
+        [s3_paths["sales_bronze"]],
+    )
 
     conn.close()
     logger.info("✅ Bronze Layer corrupted.")

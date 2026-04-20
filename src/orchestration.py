@@ -33,7 +33,7 @@ class PureFlowDbtTranslator(DagsterDbtTranslator):
         resource_type = dbt_resource_props.get("resource_type")
         if resource_type == "source":
             return AssetKey(dbt_resource_props["name"])
-        return super().get_group_name(dbt_resource_props)
+        return super().get_asset_key(dbt_resource_props)
 
     def get_group_name(self, dbt_resource_props):
         """Assigns 'gold' group to dbt models."""
@@ -47,9 +47,9 @@ class PureFlowDbtTranslator(DagsterDbtTranslator):
     manifest=DBT_PROJECT_DIR.joinpath("target", "manifest.json"),
     dagster_dbt_translator=PureFlowDbtTranslator(),
 )
-def pureflow_dbt_assets(context, dbt_resource: DbtCliResource):
+def pureflow_dbt_assets(context, dbt: DbtCliResource):
     """Assets representing dbt models in the transformation pipeline."""
-    yield from dbt_resource.cli(["run"], context=context).stream()
+    yield from dbt.cli(["run"], context=context).stream()
 
 
 # --- 2. Data State Management Assets ---
@@ -87,15 +87,19 @@ def inject_corrupt_bronze(context):
 
 # Main Transformation Pipeline
 pureflow_pipeline_job = define_asset_job(  # pylint: disable=assignment-from-no-return
-    name="pureflow_pipeline_job", selection=AssetSelection.all()
+    name="pureflow_pipeline_job",
+    selection=AssetSelection.all() | AssetSelection.all_asset_checks(),
 )
 
 # Specific job to test Quality Gates by corrupting and then running the pipeline
 # This will likely fail (red) and allow clicking the GX report link
 quality_test_job = define_asset_job(  # pylint: disable=assignment-from-no-return
     name="quality_test_job",
-    selection=AssetSelection.groups("test_quality")
-    | AssetSelection.groups("bronze", "silver"),
+    selection=(
+        AssetSelection.groups("test_quality")
+        | AssetSelection.groups("bronze", "silver")
+        | AssetSelection.all_asset_checks()
+    ),
 )
 
 # Dynamic asset discovery:

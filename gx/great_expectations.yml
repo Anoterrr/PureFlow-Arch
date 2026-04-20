@@ -94,7 +94,7 @@ fluent_datasources:
             id: 391a89f4-41c2-4f32-96ff-3731612c9240
             partitioner:
         query: SELECT * FROM 
-          read_csv_auto('data/minio_data/landing-zone/sales_erp/dt=2024-03-29/sales.csv')
+          read_csv_auto('data/minio_data/landing-zone/sales_erp/dt=2026-04-19/sales.csv')
     connection_string: 'duckdb:///:memory:'
   sales_quality_datasource:
     type: sql
@@ -109,7 +109,7 @@ fluent_datasources:
             id: b397bc70-92e1-4e6a-bdd3-aa9e23478165
             partitioner:
         query: SELECT * FROM 
-          read_parquet('s3://bronze/sales_erp/dt=2026-04-14/sales.parquet')
+          read_parquet('s3://bronze/sales_erp/dt=2026-04-19/sales.parquet')
     connection_string: 'duckdb:///:memory:'
 analytics_enabled:
 data_context_id: cb18d2b6-ff70-402b-a6c5-4ad1ee031c46

@@ -8,7 +8,7 @@ from core.factory import DataPipelineFactory
 SQL_DIR = os.path.join("src", "sql", "customers")
 
 # --- Bronze Layer ---
-stg_customers_bronze = DataPipelineFactory.create_asset(
+stg_customers_bronze, stg_customers_bronze_check = DataPipelineFactory.create_asset(
     name="stg_customers_bronze",
     group_name="bronze",
     source={
@@ -35,7 +35,7 @@ stg_customers_bronze = DataPipelineFactory.create_asset(
 )
 
 # --- Silver Layer ---
-customers_silver = DataPipelineFactory.create_asset(
+customers_silver, customers_silver_check = DataPipelineFactory.create_asset(
     name="customers_silver",
     group_name="silver",
     depends_on=["stg_customers_bronze"],

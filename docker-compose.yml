@@ -39,8 +39,12 @@ services:
       - "3000:3000"
     # COMPILATION GATE: Ensures dbt manifest is fresh before starting Dagster
     command: >
-      bash -c "cd dbt && dbt compile --profiles-dir . --profile pureflow && 
-               cd /app && dagster dev -h 0.0.0.0 -p 3000 -f /app/src/orchestration.py"
+      bash -c "echo '🚀 Initializing PureFlow Environment...' &&
+               cd dbt && 
+               dbt compile --profiles-dir . --profile pureflow && 
+               cd /app && 
+               echo '✅ dbt Manifest updated. Starting Dagster...' &&
+               dagster dev -h 0.0.0.0 -p 3000 -f /app/src/orchestration.py"
     depends_on:
       minio:
         condition: service_healthy

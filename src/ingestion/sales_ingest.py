@@ -43,16 +43,19 @@ class SalesIngestor(BaseIngestor):
         try:
             # Atomic operation: read CSV, add metadata, write Parquet to Bronze
             # DuckDB handles the S3 upload directly via httpfs
-            conn.execute(f"""  # nosec B608
+            conn.execute(
+                """
                 COPY (
                     SELECT
                         *,
                         now() as _ingested_at,
                         'sales' as _domain,
-                        '{os.path.basename(landing_csv)}' as _source_file
-                    FROM read_csv_auto('{landing_csv}')
-                ) TO '{bronze_parquet}' (FORMAT 'PARQUET')
-            """)
+                        ? as _source_file
+                    FROM read_csv_auto(?)
+                ) TO ? (FORMAT 'PARQUET')
+                """,
+                [os.path.basename(landing_csv), landing_csv, bronze_parquet],
+            )
             logger.info("✅ Sales data ingested to Bronze successfully.")
         except Exception as err:
             logger.error("❌ Failed to ingest Sales data: %s", err)

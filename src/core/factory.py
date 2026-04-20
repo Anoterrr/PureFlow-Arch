@@ -1,8 +1,16 @@
 """Factory Pattern for creating Data Pipelines as Dagster Assets."""
 
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple, Union
 
-from dagster import AssetKey, AssetsDefinition, MetadataValue, asset
+from dagster import (
+    AssetCheckResult,
+    AssetKey,
+    AssetsDefinition,
+    AssetChecksDefinition,
+    MetadataValue,
+    asset,
+    asset_check,
+)
 
 from core.engine import PureFlowEngine
 from validation.gx_validator import validate_data
@@ -26,9 +34,10 @@ class DataPipelineFactory:
         sql_transform: Optional[str] = None,
         expectations: Optional[List[Dict[str, Any]]] = None,
         depends_on: Optional[List[str]] = None,
-    ) -> AssetsDefinition:
+    ) -> Tuple[AssetsDefinition, Optional[AssetChecksDefinition]]:
         """
-        Generates a Dagster Asset that moves data, transforms it, and validates it.
+        Generates a Dagster Asset and an optional Asset Check for quality.
+        Returns (Asset, Check).
         """
 
         # Define dependencies (Lineage)
@@ -37,7 +46,6 @@ class DataPipelineFactory:
         @asset(name=name, group_name=group_name, deps=deps, compute_kind="duckdb")
         def generated_asset(context):
             # 1. Initialize Engine
-            # We can get execution_date from Dagster's context partition if needed
             engine = PureFlowEngine()
 
             # 2. Execute Data Movement & Transformation
@@ -58,34 +66,33 @@ class DataPipelineFactory:
                 }
             )
 
-            # 4. Optional Validation (Great Expectations)
-            if expectations:
+            return result
+
+        # 4. Separate Quality Check Step (Asset Check)
+        generated_check = None
+        if expectations:
+
+            @asset_check(asset=generated_asset, name=f"check_{name}")
+            def quality_gate(context):
+                engine = PureFlowEngine()
+                # Re-render path for the check to validate the materialized target
+                rendered_path = engine.render_path(target["path"])
+
                 success, report_url = validate_data(
-                    path=result["target_path"],
+                    path=rendered_path,
                     expectations=expectations,
                     data_format=target["format"],
                     suite_name=f"suite_{name}",
                 )
-                # We can't return AssetCheckResult directly from an asset function
-                # without @asset_check, but we can log and add metadata.
-                context.log.info(
-                    "🛡️ Validation %s! Report: %s",
-                    "Passed" if success else "FAILED",
-                    report_url,
-                )
 
-                context.add_output_metadata(
-                    {
-                        "quality_check": "Passed" if success else "FAILED",
+                return AssetCheckResult(
+                    passed=success,
+                    metadata={
                         "gx_report": MetadataValue.url(report_url),
-                    }
+                        "description": "Validation powered by Great Expectations",
+                    },
                 )
 
-                if not success:
-                    raise ValueError(
-                        f"❌ Data Quality Check FAILED for {name}. Check report at {report_url}"
-                    )
+            generated_check = quality_gate
 
-            return result
-
-        return generated_asset
+        return generated_asset, generated_check

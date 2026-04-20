@@ -62,8 +62,10 @@ def validate_data(
             if fmt == "csv"
             else ("read_parquet" if fmt == "parquet" else "read_json_auto")
         )
-        asset = datasource.add_query_asset(  # nosec B608
-            name=asset_name, query=f"SELECT * FROM {read_func}('{path}')"
+        # We must use a string-based query for GX add_query_asset, which Bandit flags.
+        # Since this is an internal dynamic query, we use nosec B608.
+        asset = datasource.add_query_asset(
+            name=asset_name, query=f"SELECT * FROM {read_func}('{path}')"  # nosec B608
         )
         batch_def = asset.add_batch_definition_whole_table(f"batch_{suite_name}")
 

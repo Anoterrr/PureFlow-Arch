@@ -27,16 +27,19 @@ class CustomerIngestor(BaseIngestor):
 
         try:
             # Atomic operation: read JSON, add metadata, write Parquet to Bronze
-            conn.execute(f"""  # nosec B608
+            conn.execute(
+                """
                 COPY (
                     SELECT
                         *,
                         now() as _ingested_at,
                         'customers' as _domain,
-                        '{os.path.basename(landing_json)}' as _source_file
-                    FROM read_json_auto('{landing_json}')
-                ) TO '{bronze_parquet}' (FORMAT 'PARQUET')
-            """)
+                        ? as _source_file
+                    FROM read_json_auto(?)
+                ) TO ? (FORMAT 'PARQUET')
+                """,
+                [os.path.basename(landing_json), landing_json, bronze_parquet],
+            )
             logger.info("✅ Customer data ingested to Bronze successfully.")
         except Exception as err:
             logger.error("❌ Failed to ingest Customer data: %s", err)

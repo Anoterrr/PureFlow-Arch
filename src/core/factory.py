@@ -1,6 +1,6 @@
 """Factory Pattern for creating Data Pipelines as Dagster Assets."""
 
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, List, Optional, Tuple
 
 from dagster import (
     AssetCheckResult,
@@ -73,7 +73,7 @@ class DataPipelineFactory:
         if expectations:
 
             @asset_check(asset=generated_asset, name=f"check_{name}")
-            def quality_gate(context):
+            def quality_gate(_context):
                 engine = PureFlowEngine()
                 # Re-render path for the check to validate the materialized target
                 rendered_path = engine.render_path(target["path"])

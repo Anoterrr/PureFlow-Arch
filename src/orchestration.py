@@ -21,7 +21,7 @@ from utils.generate_dirty_data import generate_dirty_big_data
 
 # --- 1. dbt Configuration with Lineage Mapping ---
 DBT_PROJECT_DIR = Path(__file__).joinpath("..", "..", "dbt").resolve()
-dbt = DbtCliResource(project_dir=os.fspath(DBT_PROJECT_DIR))
+dbt_resource = DbtCliResource(project_dir=os.fspath(DBT_PROJECT_DIR))
 
 
 # This translator connects dbt sources to our Factory assets
@@ -112,6 +112,6 @@ all_assets = [
 
 defs = Definitions(
     assets=all_assets,
-    resources={"dbt": dbt},
+    resources={"dbt": dbt_resource},
     jobs=[pureflow_pipeline_job, quality_test_job],
 )

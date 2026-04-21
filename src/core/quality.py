@@ -62,5 +62,5 @@ def get_or_create_suite(context, suite_name):
         return context.suites.get(name=suite_name)
     except Exception:  # pylint: disable=broad-exception-caught
         # Create new suite if it doesn't exist
-        suite = ExpectationSuite(expectation_suite_name=suite_name)
+        suite = ExpectationSuite(suite_name)
         return context.suites.add(suite)

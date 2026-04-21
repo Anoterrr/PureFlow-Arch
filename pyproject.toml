@@ -70,6 +70,10 @@ profiles_dir = "./dbt"
 tab_width = 4
 indent_unit = "space"
 
+[tool.pytest.ini_options]
+pythonpath = ["src", "."]
+testpaths = ["tests"]
+
 [build-system]
 requires = ["poetry-core>=1.0.0"]
 build-backend = "poetry.core.masonry.api"

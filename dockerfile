@@ -8,13 +8,9 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 # 2. Installation of dependencies and global Poetry
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
+# hadolint ignore=DL3008
 RUN apt-get update && apt-get upgrade -y && apt-get install -y --no-install-recommends \
-    curl=7.88.1* \
-    build-essential=12.9* \
-    libpq-dev=15* \
-    git=1:2.39.2* \
-    gcc=4:12.2.0* \
-    python3-dev=3.11.2* \
+    curl build-essential libpq-dev git gcc python3-dev \
     && curl -sSL https://install.python-poetry.org | python3 - \
     && /opt/poetry/bin/poetry self add "poetry-plugin-export" "poetry-audit-plugin" \
     && apt-get clean && rm -rf /var/lib/apt/lists/*

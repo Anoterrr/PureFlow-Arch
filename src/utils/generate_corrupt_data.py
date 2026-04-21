@@ -5,14 +5,16 @@ from core.connection import ConnectionFactory
 from core.logger import logger
 
 
-def corrupt_landing_zone():
+def corrupt_landing_zone(execution_date=None):
     """Corrupts data in the Landing Zone (CSV/JSON)."""
     factory = ConnectionFactory()
     conn = factory.get_duckdb_conn()
     factory.setup_s3_auth(conn)
-    s3_paths = get_s3_paths()
+    
+    base_date = execution_date or BASE_DATE
+    s3_paths = get_s3_paths(base_date=base_date)
 
-    logger.warning("🧨 [Corruptor] Corrupting Landing Zone data...")
+    logger.warning("🧨 [Corruptor] Corrupting Landing Zone data for date %s...", base_date)
 
     # 1. Corrupt Sales (CSV) - Inject Null IDs and Negative Prices
     conn.execute(
@@ -42,21 +44,23 @@ def corrupt_landing_zone():
             FROM range(1, 501)
         ) TO ? (FORMAT 'JSON', ARRAY TRUE)
         """,
-        [BASE_DATE, s3_paths["customers_landing"]],
+        [base_date, s3_paths["customers_landing"]],
     )
 
     conn.close()
     logger.info("✅ Landing Zone corrupted.")
 
 
-def corrupt_bronze_layer():
+def corrupt_bronze_layer(execution_date=None):
     """Injects bad data directly into Bronze Parquet files."""
     factory = ConnectionFactory()
     conn = factory.get_duckdb_conn()
     factory.setup_s3_auth(conn)
-    s3_paths = get_s3_paths()
+    
+    base_date = execution_date or BASE_DATE
+    s3_paths = get_s3_paths(base_date=base_date)
 
-    logger.warning("🧨 [Corruptor] Corrupting Bronze Layer...")
+    logger.warning("🧨 [Corruptor] Corrupting Bronze Layer for date %s...", base_date)
 
     # Inject sales with NULL product names or invalid dates in Bronze
     # This simulates a bug in the ingestion script

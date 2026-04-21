@@ -8,20 +8,22 @@ from core.logger import logger
 from utils.generators import generate_base_customers, generate_base_sales
 
 
-def generate_clean_big_data():
+def generate_clean_big_data(execution_date=None):
     """Generates clean sales and customer data and writes directly to MinIO."""
     # 1. Initialize Connection
     factory = ConnectionFactory()
     conn = factory.get_duckdb_conn()
     factory.setup_s3_auth(conn)
 
-    s3_paths = get_s3_paths()
+    # Use provided execution_date or fallback to global/env
+    base_date = execution_date or BASE_DATE
+    s3_paths = get_s3_paths(base_date=base_date)
 
     # 2. Generate clean customers_crm (~100k rows)
     n_customers = 100_000
-    logger.info("🚀 Generating %d customers (CLEAN)...", n_customers)
+    logger.info("🚀 Generating %d customers (CLEAN) for date %s...", n_customers, base_date)
     customers = generate_base_customers(n_customers)
-    customers["created_at"] = [BASE_DATE] * n_customers
+    customers["created_at"] = [base_date] * n_customers
 
     df_customers = pd.DataFrame(customers)  # pylint: disable=unused-variable
 

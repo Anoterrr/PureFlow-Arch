@@ -7,8 +7,8 @@ from core.factory import DataPipelineFactory
 # Paths to SQL files
 SQL_DIR = os.path.join("src", "sql", "customers")
 
-# --- Bronze Layer ---
-stg_customers_bronze, stg_customers_bronze_check = DataPipelineFactory.create_asset(
+# --- 1. Bronze Layer (Landing -> Bronze) ---
+customers_bronze_assets = DataPipelineFactory.create_asset(
     name="stg_customers_bronze",
     group_name="bronze",
     source={
@@ -22,11 +22,13 @@ stg_customers_bronze, stg_customers_bronze_check = DataPipelineFactory.create_as
     sql_transform=DataPipelineFactory.load_sql(
         os.path.join(SQL_DIR, "stg_customers_bronze.sql")
     ),
-    expectations=[
+    source_expectations=[
         {
             "expectation": "ExpectColumnValuesToNotBeNull",
             "kwargs": {"column": "customer_id"},
         },
+    ],
+    target_expectations=[
         {
             "expectation": "ExpectColumnValuesToMatchRegex",
             "kwargs": {"column": "email", "regex": r"[^@]+@[^@]+\.[^@]+"},
@@ -34,11 +36,11 @@ stg_customers_bronze, stg_customers_bronze_check = DataPipelineFactory.create_as
     ],
 )
 
-# --- Silver Layer ---
-customers_silver, customers_silver_check = DataPipelineFactory.create_asset(
+# --- 2. Silver Layer (Bronze -> Silver) ---
+customers_silver_assets = DataPipelineFactory.create_asset(
     name="customers_silver",
     group_name="silver",
-    depends_on=["stg_customers_bronze"],
+    depends_on=["gx_stg_customers_bronze"], # Depends on the POST-validation of bronze
     source={
         "path": "s3://bronze/customers_crm/dt={{ execution_date }}/customers.parquet",
         "format": "parquet",
@@ -50,4 +52,10 @@ customers_silver, customers_silver_check = DataPipelineFactory.create_asset(
     sql_transform=DataPipelineFactory.load_sql(
         os.path.join(SQL_DIR, "customers_silver.sql")
     ),
+    target_expectations=[
+        {
+            "expectation": "ExpectColumnValuesToNotBeNull",
+            "kwargs": {"column": "email"},
+        },
+    ],
 )

@@ -8,19 +8,20 @@ from core.logger import logger
 from utils.generators import generate_base_customers, generate_base_sales
 
 
-def generate_dirty_big_data():
+def generate_dirty_big_data(execution_date=None):
     """Generates dirty sales and customer data with intentional errors."""
     factory = ConnectionFactory()
     conn = factory.get_duckdb_conn()
     factory.setup_s3_auth(conn)
 
-    s3_paths = get_s3_paths()
+    base_date = execution_date or BASE_DATE
+    s3_paths = get_s3_paths(base_date=base_date)
 
     # 1. Generate Dirty Customers (Null IDs)
     n_customers = 1000
-    logger.info("🚀 Generating %d customers (DIRTY)...", n_customers)
+    logger.info("🚀 Generating %d customers (DIRTY) for date %s...", n_customers, base_date)
     customers = generate_base_customers(n_customers)
-    customers["created_at"] = [BASE_DATE] * n_customers
+    customers["created_at"] = [base_date] * n_customers
     df_customers = pd.DataFrame(customers)
 
     # Introduce Nulls in id
@@ -38,7 +39,7 @@ def generate_dirty_big_data():
         n_sales=n_sales,
         n_customers=n_customers,
         amount_range=(-500.0, 5000.0),  # Intentional negative values
-        base_date=BASE_DATE,
+        base_date=base_date,
     )
     df_sales = pd.DataFrame(sales)
 

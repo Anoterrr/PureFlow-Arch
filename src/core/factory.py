@@ -1,15 +1,12 @@
 """Factory Pattern for creating Data Pipelines as Dagster Assets."""
 
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional
 
 from dagster import (
-    AssetCheckResult,
     AssetKey,
     AssetsDefinition,
-    AssetChecksDefinition,
     MetadataValue,
     asset,
-    asset_check,
 )
 
 from core.engine import PureFlowEngine
@@ -32,23 +29,59 @@ class DataPipelineFactory:
         target: Dict[str, str],
         group_name: str = "default",
         sql_transform: Optional[str] = None,
-        expectations: Optional[List[Dict[str, Any]]] = None,
+        source_expectations: Optional[List[Dict[str, Any]]] = None,
+        target_expectations: Optional[List[Dict[str, Any]]] = None,
         depends_on: Optional[List[str]] = None,
-    ) -> Tuple[AssetsDefinition, Optional[AssetChecksDefinition]]:
+    ) -> List[AssetsDefinition]:
         """
-        Generates a Dagster Asset and an optional Asset Check for quality.
-        Returns (Asset, Check).
+        Generates a sequence of Dagster Assets:
+        [Source Validation (GX)] -> [Transformation (DuckDB)] -> [Target Validation (GX)].
+        Returns a list of AssetDefinitions to be registered.
         """
+        assets = []
+        current_deps = [AssetKey([dep]) for dep in depends_on] if depends_on else []
 
-        # Define dependencies (Lineage)
-        deps = [AssetKey([dep]) for dep in depends_on] if depends_on else []
+        # 1. Source Validation Asset (gx_landing or gx_bronze, etc.)
+        if source_expectations:
+            gx_source_name = f"gx_{name}_source"
 
-        @asset(name=name, group_name=group_name, deps=deps, compute_kind="duckdb")
-        def generated_asset(context):
-            # 1. Initialize Engine
-            engine = PureFlowEngine()
+            @asset(
+                name=gx_source_name,
+                group_name=group_name,
+                deps=current_deps,
+                compute_kind="gx",
+                config_schema={"execution_date": str},
+            )
+            def source_validation(context):
+                execution_date = context.op_config.get("execution_date")
+                engine = PureFlowEngine(execution_date=execution_date)
+                
+                rendered_path = engine.render_path(source["path"])
+                success, report_url = validate_data(
+                    path=rendered_path,
+                    expectations=source_expectations,
+                    data_format=source["format"],
+                    suite_name=f"suite_{gx_source_name}",
+                )
+                if not success:
+                    raise ValueError(f"Source validation failed for {name}. Report: {report_url}")
+                return MetadataValue.url(report_url)
 
-            # 2. Execute Data Movement & Transformation
+            assets.append(source_validation)
+            current_deps = [AssetKey([gx_source_name])]
+
+        # 2. Main Transformation Asset (bronze or silver, etc.)
+        @asset(
+            name=name, 
+            group_name=group_name, 
+            deps=current_deps, 
+            compute_kind="duckdb",
+            config_schema={"execution_date": str},
+        )
+        def main_transformation(context):
+            execution_date = context.op_config.get("execution_date")
+            engine = PureFlowEngine(execution_date=execution_date)
+            
             result = engine.execute_move_and_transform(
                 source_path=source["path"],
                 source_format=source["format"],
@@ -56,8 +89,6 @@ class DataPipelineFactory:
                 target_format=target["format"],
                 sql_transform=sql_transform,
             )
-
-            # 3. Add Metadata to Dagster
             context.add_output_metadata(
                 {
                     "rows_processed": MetadataValue.int(result["row_count"]),
@@ -65,34 +96,37 @@ class DataPipelineFactory:
                     "status": "Success",
                 }
             )
-
             return result
 
-        # 4. Separate Quality Check Step (Asset Check)
-        generated_check = None
-        if expectations:
+        assets.append(main_transformation)
+        current_deps = [AssetKey([name])]
 
-            @asset_check(asset=generated_asset, name=f"check_{name}")
-            def quality_gate(_context):
-                engine = PureFlowEngine()
-                # Re-render path for the check to validate the materialized target
+        # 3. Target Validation Asset (gx_bronze or gx_silver, etc.)
+        if target_expectations:
+            gx_target_name = f"gx_{name}"
+
+            @asset(
+                name=gx_target_name,
+                group_name=group_name,
+                deps=current_deps,
+                compute_kind="gx",
+                config_schema={"execution_date": str},
+            )
+            def target_validation(context):
+                execution_date = context.op_config.get("execution_date")
+                engine = PureFlowEngine(execution_date=execution_date)
+                
                 rendered_path = engine.render_path(target["path"])
-
                 success, report_url = validate_data(
                     path=rendered_path,
-                    expectations=expectations,
+                    expectations=target_expectations,
                     data_format=target["format"],
-                    suite_name=f"suite_{name}",
+                    suite_name=f"suite_{gx_target_name}",
                 )
+                if not success:
+                    raise ValueError(f"Target validation failed for {name}. Report: {report_url}")
+                return MetadataValue.url(report_url)
 
-                return AssetCheckResult(
-                    passed=success,
-                    metadata={
-                        "gx_report": MetadataValue.url(report_url),
-                        "description": "Validation powered by Great Expectations",
-                    },
-                )
+            assets.append(target_validation)
 
-            generated_check = quality_gate
-
-        return generated_asset, generated_check
+        return assets

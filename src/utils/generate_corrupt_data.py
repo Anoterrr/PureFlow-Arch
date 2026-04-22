@@ -20,7 +20,8 @@ def corrupt_landing_zone(execution_date=None):
     )
 
     # 1. Corrupt Sales (CSV) - Inject Null IDs and Negative Prices
-    # Column names must match what stg_sales_bronze.sql expects: id, customer_id, product, price, date
+    # Column names must match what stg_sales_bronze.sql expects:
+    # id, customer_id, product, price, date
     conn.execute(
         """
         COPY (

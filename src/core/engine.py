@@ -69,8 +69,8 @@ class PureFlowEngine:
             # This is a 'move' simulated by COPY
             # In a real S3 we'd use boto3, here we use DuckDB's COPY as a generic file mover
             conn.execute(
-                f"COPY (SELECT * FROM read_parquet('{source_path}')) "
-                f"TO '{target_quarantine_path}' (FORMAT 'PARQUET')"
+                "COPY (SELECT * FROM read_parquet(?)) TO ? (FORMAT 'PARQUET')",
+                [source_path, target_quarantine_path]
             )
 
             return target_quarantine_path

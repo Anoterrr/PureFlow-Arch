@@ -48,7 +48,7 @@ def load_gold_data():
     gold_path = f"s3://gold/sales_summary/dt={base_date}/sales_summary.parquet"
 
     try:
-        return conn.execute(f"SELECT * FROM read_parquet('{gold_path}')").df()  # nosec B608
+        return conn.execute("SELECT * FROM read_parquet(?)", [gold_path]).df()
     except Exception as e:  # pylint: disable=broad-exception-caught
         st.error(f"Error loading gold data: {e}")
         return pd.DataFrame()

@@ -66,12 +66,14 @@ def validate_data(
 
         # Check if file exists before running GX to provide better error messages
         try:
-            raw_conn.execute(f"SELECT 1 FROM {read_func}('{path}') LIMIT 1")
+            # We use f-string for function name, but path is parameterized
+            raw_conn.execute(f"SELECT 1 FROM {read_func}(?) LIMIT 1", [path])  # nosec B608
         except Exception as e:
             raise FileNotFoundError(f"Data not accessible at {path}. Error: {str(e)}") from e
 
         asset = datasource.add_query_asset(
-            name=asset_name, query=f"SELECT * FROM {read_func}('{path}')"  # nosec B608
+            name=asset_name,
+            query=f"SELECT * FROM {read_func}('{path}')"  # nosec B608
         )
         batch_def = asset.add_batch_definition_whole_table(f"batch_{suite_name}")
 

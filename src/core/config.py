@@ -1,10 +1,9 @@
 """Shared configuration for data generation and ingestion."""
 
 import os
-from datetime import datetime
 
-# Default date set to today if not provided
-BASE_DATE = os.getenv("EXECUTION_DATE", datetime.now().strftime("%Y-%m-%d"))
+# Base date for data generation and processing
+BASE_DATE = os.getenv("BASE_DATE", "2026-04-19")
 
 # S3 / MinIO Configuration
 S3_BUCKET_LANDING = os.getenv("S3_BUCKET_LANDING", "landing-zone")
@@ -14,7 +13,7 @@ S3_BUCKET_GOLD = os.getenv("S3_BUCKET_GOLD", "gold")
 S3_BUCKET_QUARANTINE = os.getenv("S3_BUCKET_QUARANTINE", "quarantine")
 
 
-def get_s3_paths(base_date=BASE_DATE):
+def get_s3_paths(base_date: str):
     """Returns the S3 URI paths for ingestion and validation layers."""
     return {
         # Landing (Input)

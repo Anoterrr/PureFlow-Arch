@@ -16,7 +16,7 @@ sales_bronze_assets = DataPipelineFactory.create_asset(
         "format": "csv",
     },
     target={
-        "path": "s3://bronze/sales_erp/dt={{ execution_date }}/sales.parquet",
+        "path": "s3://{{ group }}/sales_erp/dt={{ execution_date }}/{{ name }}{{ extension }}",
         "format": "parquet",
     },
     sql_transform=DataPipelineFactory.load_sql(
@@ -39,12 +39,12 @@ sales_silver_assets = DataPipelineFactory.create_asset(
     group_name="silver",
     depends_on=["gx_stg_sales_bronze"], # Depends on the POST-validation of bronze
     source={
-        "path": "s3://bronze/sales_erp/dt={{ execution_date }}/sales.parquet",
+        "path": "s3://bronze/sales_erp/dt={{ execution_date }}/stg_sales_bronze.parquet",
         "format": "parquet",
     },
     target={
-        "path": "s3://silver/sales/dt={{ execution_date }}/sales.parquet",
-        "format": "parquet",
+        "path": "s3://{{ group }}/sales/dt={{ execution_date }}",
+        "format": "delta",
     },
     sql_transform=DataPipelineFactory.load_sql(
         os.path.join(SQL_DIR, "sales_silver.sql")

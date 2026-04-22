@@ -1,0 +1,20 @@
+{
+  "expectations": [
+    {
+      "id": "7ea34973-d56e-4ec9-a300-abf1a180a500",
+      "kwargs": {
+        "max_value": 2000000,
+        "min_value": 1
+      },
+      "meta": {},
+      "severity": "critical",
+      "type": "expect_table_row_count_to_be_between"
+    }
+  ],
+  "id": "2ad6dc01-9d4c-4605-975b-4bd122e30958",
+  "meta": {
+    "great_expectations_version": "1.12.3"
+  },
+  "name": "suite_gx_stg_sales_bronze_source",
+  "notes": null
+}

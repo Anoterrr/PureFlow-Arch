@@ -93,8 +93,7 @@ fluent_datasources:
           sales_batch_def:
             id: 391a89f4-41c2-4f32-96ff-3731612c9240
             partitioner:
-        query: SELECT * FROM 
-          read_csv_auto('data/minio_data/landing-zone/sales_erp/dt=2026-04-19/sales.csv')
+        query: SELECT * FROM read_csv_auto('data/minio_data/landing-zone/sales_erp/dt=2026-04-19/sales.csv')
     connection_string: 'duckdb:///:memory:'
   sales_quality_datasource:
     type: sql
@@ -108,8 +107,21 @@ fluent_datasources:
           sales_bronze_batch_def:
             id: b397bc70-92e1-4e6a-bdd3-aa9e23478165
             partitioner:
-        query: SELECT * FROM 
-          read_parquet('s3://bronze/sales_erp/dt=2026-04-19/sales.parquet')
+        query: SELECT * FROM read_parquet('s3://bronze/sales_erp/dt=2026-04-19/sales.parquet')
+    connection_string: 'duckdb:///:memory:'
+  ds_suite_gx_stg_sales_bronze_source:
+    type: sql
+    id: 3d97745f-3b3d-47f0-8b80-abbbb77cec7b
+    assets:
+      asset_suite_gx_stg_sales_bronze_source:
+        type: query
+        id: fbabf00f-b951-4fe5-9a27-b6dd103d2445
+        batch_metadata: {}
+        batch_definitions:
+          batch_suite_gx_stg_sales_bronze_source:
+            id: 7e9ade07-d251-4493-b88b-19bba19ef0ac
+            partitioner:
+        query: SELECT * FROM read_csv_auto('s3://landing-zone/sales_erp/dt=2026-04-19/sales.csv')
     connection_string: 'duckdb:///:memory:'
 analytics_enabled:
 data_context_id: cb18d2b6-ff70-402b-a6c5-4ad1ee031c46

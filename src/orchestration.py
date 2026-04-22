@@ -75,7 +75,7 @@ def gx_sales_summary(context):
     # Path is defined in dbt_project.yml / sales_summary.sql
     target_path = f"s3://gold/sales_summary/dt={execution_date}/sales_summary.parquet"
     
-    success, report_url = validate_data(
+    success, report_url, error_msg = validate_data(
         path=target_path,
         expectations=[
             {"expectation": "ExpectColumnValuesToNotBeNull", "kwargs": {"column": "total_revenue"}},
@@ -85,7 +85,11 @@ def gx_sales_summary(context):
         suite_name="suite_gx_sales_summary",
     )
     if not success:
-        raise ValueError(f"Gold validation failed. Report: {report_url}")
+        raise ValueError(
+            f"Gold validation failed. \n"
+            f"Reason: {error_msg} \n"
+            f"Report: {report_url}"
+        )
     return MetadataValue.url(report_url)
 
 

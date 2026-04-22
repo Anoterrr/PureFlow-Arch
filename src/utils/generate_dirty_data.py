@@ -1,4 +1,4 @@
-"""Module for generating synthetic dirty data to test validation gates."""
+"""Module for generating synthetic dirty data in S3/MinIO to test validation gates."""
 
 import pandas as pd
 
@@ -21,13 +21,14 @@ def generate_dirty_big_data(execution_date=None):
     n_customers = 1000
     logger.info("🚀 Generating %d customers (DIRTY) for date %s...", n_customers, base_date)
     customers = generate_base_customers(n_customers)
+    # created_at is an extra technical metadata field
     customers["created_at"] = [base_date] * n_customers
     df_customers = pd.DataFrame(customers)
 
     # Introduce Nulls in id
     df_customers.loc[0:10, "id"] = None
 
-    logger.info("📤 Writing dirty customers to Landing Zone...")
+    logger.info("📤 Writing dirty customers directly to Landing Zone: %s", s3_paths["customers_landing"])
     conn.execute(
         f"COPY df_customers TO '{s3_paths['customers_landing']}' (FORMAT 'JSON', ARRAY TRUE)"
     )
@@ -46,7 +47,7 @@ def generate_dirty_big_data(execution_date=None):
     # Introduce Nulls in IDs
     df_sales.loc[0:50, "id"] = None
 
-    logger.info("📤 Writing dirty sales to Landing Zone...")
+    logger.info("📤 Writing dirty sales directly to Landing Zone: %s", s3_paths["sales_landing"])
     conn.execute(
         f"COPY df_sales TO '{s3_paths['sales_landing']}' (FORMAT 'CSV', HEADER TRUE)"
     )

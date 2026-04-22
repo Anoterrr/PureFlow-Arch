@@ -70,8 +70,18 @@ docker-compose up -d --build
 | :--- | :--- | :--- |
 | **Dagster UI** | [http://localhost:3000](http://localhost:3000) | Pipeline Lineage & Execution |
 | **Streamlit** | [http://localhost:8501](http://localhost:8501) | Business Insights Dashboard |
-| **dbt Docs** | [http://localhost:8081](http://localhost:8081) | Data Documentation & Catalog |
+| dbt Docs | [http://localhost:8081](http://localhost:8081) | Data Documentation & Catalog |
 | **MinIO Console** | [http://localhost:9001](http://localhost:9001) | S3 Object Browser |
+
+---
+
+## 📂 Documentation & Visuals
+
+The project architecture and interface previews can be found in the `docs/` directory:
+
+*   **Architecture Diagram:** [docs/pureflow_architecture.png](docs/pureflow_architecture.png) - High-level overview of the Medallion flow and technology stack.
+*   **Dagster UI:** [docs/dagster_ui.png](docs/dagster_ui.png) - Preview of the asset-based orchestration and lineage.
+*   **MinIO Console:** [docs/minio_ui.png](docs/minio_ui.png) - S3-compatible storage browser.
 
 ---
 

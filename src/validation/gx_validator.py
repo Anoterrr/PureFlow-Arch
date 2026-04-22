@@ -1,7 +1,7 @@
 """Generic validation engine using Great Expectations (GX)."""
 
 import os
-from typing import Any, Dict, List, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 import great_expectations as gx
 from great_expectations.core.validation_definition import ValidationDefinition
@@ -16,10 +16,10 @@ def validate_data(
     expectations: List[Dict[str, Any]],
     data_format: str = "parquet",
     suite_name: str = "dynamic_suite",
-) -> Tuple[bool, str]:
+) -> Tuple[bool, str, Optional[str]]:
     """
     Generic execution engine for validation.
-    Returns (success: bool, report_url: str).
+    Returns (success: bool, report_url: str, error_message: Optional[str]).
     """
     # pylint: disable=too-many-locals
     factory = ConnectionFactory()
@@ -32,6 +32,7 @@ def validate_data(
     logger.info("🛡️ [Validator] Validating data at %s...", path)
 
     success = True
+    error_msg = None
     try:
         # 1. Setup Suite and Add Expectations
         suite = get_or_create_suite(context, suite_name)
@@ -53,7 +54,7 @@ def validate_data(
         try:
             datasource.delete_asset(asset_name)
         except (ValueError, LookupError):
-            logger.warning("Asset %s not found to delete", asset_name)
+            pass
 
         # Read function for GX query
         fmt = data_format.lower()
@@ -62,8 +63,13 @@ def validate_data(
             if fmt == "csv"
             else ("read_parquet" if fmt == "parquet" else "read_json_auto")
         )
-        # We must use a string-based query for GX add_query_asset, which Bandit flags.
-        # Since this is an internal dynamic query, we use nosec B608.
+        
+        # Check if file exists before running GX to provide better error messages
+        try:
+            raw_conn.execute(f"SELECT 1 FROM {read_func}('{path}') LIMIT 1")
+        except Exception as e:
+            raise FileNotFoundError(f"Data not accessible at {path}. Error: {str(e)}") from e
+
         asset = datasource.add_query_asset(
             name=asset_name, query=f"SELECT * FROM {read_func}('{path}')"  # nosec B608
         )
@@ -74,7 +80,7 @@ def validate_data(
         try:
             context.validation_definitions.delete(val_name)
         except (ValueError, LookupError):
-            logger.warning("Validation definition %s not found to delete", val_name)
+            pass
 
         val_def = context.validation_definitions.add(
             ValidationDefinition(name=val_name, data=batch_def, suite=suite)
@@ -82,29 +88,29 @@ def validate_data(
 
         result = val_def.run()
         success = result.success
+        if not success:
+            error_msg = "Data quality validation failed (check GX report for details)."
 
         context.build_data_docs()
 
     except Exception as e:  # pylint: disable=broad-exception-caught
         logger.error("❌ [Validator] Validation failed: %s", str(e))
         success = False
+        error_msg = f"Technical validation failure: {str(e)}"
     finally:
         raw_conn.close()
 
     # Dynamic path to the generated Data Docs for this specific suite
-    # GX organizes docs by: local_site/validations/<suite_name>/<timestamp>/<hash>.html
-    # For simplicity in this TCC environment, we point to the suite's index or the latest run
     report_path = os.path.abspath(
         f"gx/uncommitted/data_docs/local_site/validations/{suite_name}"
     )
 
-    # Try to find the most recent HTML report in the subdirectories
+    # Try to find the most recent HTML report
     latest_report = (
         f"file://{os.path.abspath('gx/uncommitted/data_docs/local_site/index.html')}"
     )
     try:
         if os.path.exists(report_path):
-            # Find all .html files in the validations directory for this suite
             html_files = []
             for root, _, files in os.walk(report_path):
                 for file in files:
@@ -112,9 +118,8 @@ def validate_data(
                         html_files.append(os.path.join(root, file))
 
             if html_files:
-                # Sort by modification time to get the latest
                 latest_report = f"file://{max(html_files, key=os.path.getmtime)}"
     except Exception as e:  # pylint: disable=broad-exception-caught
         logger.warning("Could not find latest report: %s", str(e))
 
-    return success, latest_report
+    return success, latest_report, error_msg

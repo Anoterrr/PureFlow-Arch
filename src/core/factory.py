@@ -41,6 +41,10 @@ class DataPipelineFactory:
         assets = []
         current_deps = [AssetKey([dep]) for dep in depends_on] if depends_on else []
 
+        # Context for path rendering
+        source_context = {"name": name, "group": group_name, "format": source["format"]}
+        target_context = {"name": name, "group": group_name, "format": target["format"]}
+
         # 1. Source Validation Asset (gx_landing or gx_bronze, etc.)
         if source_expectations:
             gx_source_name = f"gx_{name}_source"
@@ -56,15 +60,19 @@ class DataPipelineFactory:
                 execution_date = context.op_config.get("execution_date")
                 engine = PureFlowEngine(execution_date=execution_date)
                 
-                rendered_path = engine.render_path(source["path"])
-                success, report_url = validate_data(
+                rendered_path = engine.render_path(source["path"], context=source_context)
+                success, report_url, error_msg = validate_data(
                     path=rendered_path,
                     expectations=source_expectations,
                     data_format=source["format"],
                     suite_name=f"suite_{gx_source_name}",
                 )
                 if not success:
-                    raise ValueError(f"Source validation failed for {name}. Report: {report_url}")
+                    raise ValueError(
+                        f"Source validation failed for {name}. \n"
+                        f"Reason: {error_msg} \n"
+                        f"Report: {report_url}"
+                    )
                 return MetadataValue.url(report_url)
 
             assets.append(source_validation)
@@ -82,10 +90,17 @@ class DataPipelineFactory:
             execution_date = context.op_config.get("execution_date")
             engine = PureFlowEngine(execution_date=execution_date)
             
+            # Paths are rendered inside execute_move_and_transform using the engine's render_path
+            # We need to make sure execute_move_and_transform also gets the context
+            # Let's adjust engine.execute_move_and_transform first or pass context here
+            
+            rendered_source = engine.render_path(source["path"], context=source_context)
+            rendered_target = engine.render_path(target["path"], context=target_context)
+            
             result = engine.execute_move_and_transform(
-                source_path=source["path"],
+                source_path=rendered_source,
                 source_format=source["format"],
-                target_path=target["path"],
+                target_path=rendered_target,
                 target_format=target["format"],
                 sql_transform=sql_transform,
             )
@@ -116,15 +131,22 @@ class DataPipelineFactory:
                 execution_date = context.op_config.get("execution_date")
                 engine = PureFlowEngine(execution_date=execution_date)
                 
-                rendered_path = engine.render_path(target["path"])
-                success, report_url = validate_data(
+                rendered_path = engine.render_path(target["path"], context=target_context)
+                success, report_url, error_msg = validate_data(
                     path=rendered_path,
                     expectations=target_expectations,
                     data_format=target["format"],
                     suite_name=f"suite_{gx_target_name}",
                 )
                 if not success:
-                    raise ValueError(f"Target validation failed for {name}. Report: {report_url}")
+                    # Logic to quarantine data on target failure
+                    q_path = engine.quarantine_data(rendered_path, error_msg)
+                    raise ValueError(
+                        f"Target validation failed for {name}. \n"
+                        f"Data moved to quarantine: {q_path} \n"
+                        f"Reason: {error_msg} \n"
+                        f"Report: {report_url}"
+                    )
                 return MetadataValue.url(report_url)
 
             assets.append(target_validation)

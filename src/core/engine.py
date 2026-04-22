@@ -14,9 +14,64 @@ class PureFlowEngine:
         self.execution_date = execution_date or datetime.now().strftime("%Y-%m-%d")
         self.factory = ConnectionFactory()
 
-    def render_path(self, path: str) -> str:
-        """Renders dynamic variables in paths (e.g., {{ execution_date }})."""
-        return path.replace("{{ execution_date }}", self.execution_date)
+    def render_path(self, path: str, context: Optional[Dict[str, str]] = None) -> str:
+        """
+        Renders dynamic variables in paths.
+        Context can include: name, group, format.
+        """
+        rendered = path.replace("{{ execution_date }}", self.execution_date)
+        
+        if context:
+            for key, value in context.items():
+                rendered = rendered.replace(f"{{{{ {key} }}}}", str(value))
+        
+            # Handle automatic extensions based on format
+            fmt = context.get("format", "").lower()
+            ext = ""
+            if fmt == "parquet":
+                ext = ".parquet"
+            elif fmt == "csv":
+                ext = ".csv"
+            elif fmt == "json":
+                ext = ".json"
+            # delta has no extension (directory)
+            
+            rendered = rendered.replace("{{ extension }}", ext)
+            
+        return rendered
+
+    def quarantine_data(self, source_path: str, reason: str) -> str:
+        """
+        Moves failing data to a quarantine prefix in S3.
+        Returns the new quarantine path.
+        """
+        source_path = self.render_path(source_path)
+        
+        # Build quarantine path: s3://bucket/quarantine/dt=YYYY-MM-DD/reason=.../filename
+        path_parts = source_path.replace("s3://", "").split("/")
+        bucket = path_parts[0]
+        filename = path_parts[-1]
+        
+        quarantine_prefix = f"quarantine/dt={self.execution_date}/reason={reason.replace(' ', '_')}"
+        target_quarantine_path = f"s3://{bucket}/{quarantine_prefix}/{filename}"
+        
+        conn = self.factory.get_duckdb_conn()
+        self.factory.setup_s3_auth(conn)
+        
+        try:
+            logger.warning("🛡️ [Engine] Quarantining data: %s -> %s", source_path, target_quarantine_path)
+            
+            # Use DuckDB's internal S3 copy capabilities
+            # This is a 'move' simulated by COPY
+            # In a real S3 we'd use boto3, here we use DuckDB's COPY as a generic file mover
+            conn.execute(f"COPY (SELECT * FROM read_parquet('{source_path}')) TO '{target_quarantine_path}' (FORMAT 'PARQUET')")
+            
+            return target_quarantine_path
+        except Exception as e:
+            logger.error("❌ [Engine] Failed to quarantine: %s", str(e))
+            return source_path
+        finally:
+            conn.close()
 
     # pylint: disable=too-many-arguments, too-many-positional-arguments
     def execute_move_and_transform(
@@ -29,7 +84,7 @@ class PureFlowEngine:
     ) -> Dict[str, Any]:
         """
         Executes a move from source to target with an optional SQL transformation.
-        Uses DuckDB for high performance.
+        Supports DELTA format for ACID guarantees.
         """
         source_path = self.render_path(source_path)
         target_path = self.render_path(target_path)
@@ -51,8 +106,6 @@ class PureFlowEngine:
             read_func = f"read_{fmt}_auto" if fmt in ["csv", "json"] else "read_parquet"
 
             # 2. Build the query
-            # We create a temporary view 'source_data' to allow SQL transformations
-            # DuckDB-specific: f-strings for paths as they can't be parameterized
             conn.execute(
                 f"CREATE OR REPLACE VIEW source_data AS "
                 f"SELECT * FROM {read_func}('{source_path}')"  # nosec B608
@@ -63,22 +116,28 @@ class PureFlowEngine:
             )
 
             # 3. Execute and Write
-            # DuckDB allows COPY from a query directly
-            copy_query = f"""
-                COPY ({final_query})
-                TO '{target_path}' (FORMAT '{target_format.upper()}')
-            """
+            # Support for Delta Lake via DuckDB's DELTA extension
+            if target_format.upper() == "DELTA":
+                # Ensure the target directory exists for Delta
+                copy_query = f"COPY ({final_query}) TO '{target_path}' (FORMAT 'DELTA')"
+            else:
+                copy_query = f"""
+                    COPY ({final_query})
+                    TO '{target_path}' (FORMAT '{target_format.upper()}')
+                """
+            
             conn.execute(copy_query)
 
             # Get count for metadata
             row_count = conn.execute("SELECT count(*) FROM source_data").fetchone()[0]
 
-            logger.info("✅ [Engine] Success! Processed %d rows.", row_count)
+            logger.info("✅ [Engine] Success! Processed %d rows using %s.", row_count, target_format)
 
             return {
                 "status": "success",
                 "row_count": row_count,
                 "target_path": target_path,
+                "format": target_format,
             }
 
         except Exception as e:

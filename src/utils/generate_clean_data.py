@@ -1,4 +1,4 @@
-"""Module for generating synthetic big data in Hive-partitioned structure."""
+"""Module for generating synthetic clean big data in S3/MinIO."""
 
 import pandas as pd
 
@@ -23,9 +23,10 @@ def generate_clean_big_data(execution_date=None):
     n_customers = 100_000
     logger.info("🚀 Generating %d customers (CLEAN) for date %s...", n_customers, base_date)
     customers = generate_base_customers(n_customers)
+    # created_at is an extra technical metadata field
     customers["created_at"] = [base_date] * n_customers
 
-    df_customers = pd.DataFrame(customers)  # pylint: disable=unused-variable
+    df_customers = pd.DataFrame(customers)
 
     logger.info(
         "📤 Writing customers directly to Landing Zone: %s",
@@ -42,9 +43,9 @@ def generate_clean_big_data(execution_date=None):
         n_sales=n_sales,
         n_customers=n_customers,
         amount_range=(10.0, 5000.0),
-        base_date=BASE_DATE,
+        base_date=base_date,
     )
-    df_sales = pd.DataFrame(sales)  # pylint: disable=unused-variable
+    df_sales = pd.DataFrame(sales)
 
     logger.info(
         "📤 Writing sales directly to Landing Zone: %s", s3_paths["sales_landing"]

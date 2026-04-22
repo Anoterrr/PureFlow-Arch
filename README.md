@@ -77,11 +77,19 @@ docker-compose up -d --build
 
 ## 📂 Documentation & Visuals
 
-The project architecture and interface previews can be found in the `docs/` directory:
+The project architecture and interface previews:
 
-*   **Architecture Diagram:** [docs/pureflow_architecture.png](docs/pureflow_architecture.png) - High-level overview of the Medallion flow and technology stack.
-*   **Dagster UI:** [docs/dagster_ui.png](docs/dagster_ui.png) - Preview of the asset-based orchestration and lineage.
-*   **MinIO Console:** [docs/minio_ui.png](docs/minio_ui.png) - S3-compatible storage browser.
+### 🏗️ Architecture Diagram
+![PureFlow Architecture](docs/pureflow_architecture.png)
+*High-level overview of the Medallion flow and technology stack.*
+
+### 🚀 Dagster UI (Orchestration)
+![Dagster UI](docs/dagster_ui.png)
+*Preview of the asset-based orchestration and lineage.*
+
+### 📦 MinIO Console (S3 Storage)
+![MinIO Console](docs/minio_ui.png)
+*S3-compatible storage browser showing the medallion buckets.*
 
 ---
 

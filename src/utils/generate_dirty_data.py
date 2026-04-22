@@ -28,7 +28,10 @@ def generate_dirty_big_data(execution_date=None):
     # Introduce Nulls in id
     df_customers.loc[0:10, "id"] = None
 
-    logger.info("📤 Writing dirty customers directly to Landing Zone: %s", s3_paths["customers_landing"])
+    logger.info(
+        "📤 Writing dirty customers directly to Landing Zone: %s",
+        s3_paths["customers_landing"]
+    )
     conn.execute(
         f"COPY df_customers TO '{s3_paths['customers_landing']}' (FORMAT 'JSON', ARRAY TRUE)"
     )
@@ -42,12 +45,15 @@ def generate_dirty_big_data(execution_date=None):
         amount_range=(-500.0, 5000.0),  # Intentional negative values
         base_date=base_date,
     )
-    df_sales = pd.DataFrame(sales)
+    df_sales = pd.DataFrame(sales)  # pylint: disable=unused-variable
 
     # Introduce Nulls in IDs
     df_sales.loc[0:50, "id"] = None
 
-    logger.info("📤 Writing dirty sales directly to Landing Zone: %s", s3_paths["sales_landing"])
+    logger.info(
+        "📤 Writing dirty sales directly to Landing Zone: %s",
+        s3_paths["sales_landing"]
+    )
     conn.execute(
         f"COPY df_sales TO '{s3_paths['sales_landing']}' (FORMAT 'CSV', HEADER TRUE)"
     )

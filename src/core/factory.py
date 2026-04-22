@@ -23,7 +23,7 @@ class DataPipelineFactory:
             return f.read()
 
     @staticmethod
-    def create_asset(  # pylint: disable=too-many-arguments, too-many-positional-arguments
+    def create_asset(  # pylint: disable=too-many-arguments, too-many-positional-arguments, too-many-locals
         name: str,
         source: Dict[str, str],
         target: Dict[str, str],
@@ -59,7 +59,7 @@ class DataPipelineFactory:
             def source_validation(context):
                 execution_date = context.op_config.get("execution_date")
                 engine = PureFlowEngine(execution_date=execution_date)
-                
+
                 rendered_path = engine.render_path(source["path"], context=source_context)
                 success, report_url, error_msg = validate_data(
                     path=rendered_path,
@@ -80,23 +80,23 @@ class DataPipelineFactory:
 
         # 2. Main Transformation Asset (bronze or silver, etc.)
         @asset(
-            name=name, 
-            group_name=group_name, 
-            deps=current_deps, 
+            name=name,
+            group_name=group_name,
+            deps=current_deps,
             compute_kind="duckdb",
             config_schema={"execution_date": str},
         )
         def main_transformation(context):
             execution_date = context.op_config.get("execution_date")
             engine = PureFlowEngine(execution_date=execution_date)
-            
+
             # Paths are rendered inside execute_move_and_transform using the engine's render_path
             # We need to make sure execute_move_and_transform also gets the context
             # Let's adjust engine.execute_move_and_transform first or pass context here
-            
+
             rendered_source = engine.render_path(source["path"], context=source_context)
             rendered_target = engine.render_path(target["path"], context=target_context)
-            
+
             result = engine.execute_move_and_transform(
                 source_path=rendered_source,
                 source_format=source["format"],
@@ -130,7 +130,7 @@ class DataPipelineFactory:
             def target_validation(context):
                 execution_date = context.op_config.get("execution_date")
                 engine = PureFlowEngine(execution_date=execution_date)
-                
+
                 rendered_path = engine.render_path(target["path"], context=target_context)
                 success, report_url, error_msg = validate_data(
                     path=rendered_path,

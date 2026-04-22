@@ -12,11 +12,9 @@ from dagster import (
     load_assets_from_current_module,
     load_assets_from_package_name,
     MetadataValue,
-    RunConfig,
 )
 from dagster_dbt import DagsterDbtTranslator, DbtCliResource, dbt_assets
 
-from core.engine import PureFlowEngine
 from validation.gx_validator import validate_data
 
 # Import data generators and corruptors
@@ -70,16 +68,21 @@ def pureflow_dbt_assets(context, dbt: DbtCliResource):
 def gx_sales_summary(context):
     """Quality gate for the final Gold Layer asset."""
     execution_date = context.op_config.get("execution_date")
-    engine = PureFlowEngine(execution_date=execution_date)
-    
+
     # Path is defined in dbt_project.yml / sales_summary.sql
     target_path = f"s3://gold/sales_summary/dt={execution_date}/sales_summary.parquet"
-    
+
     success, report_url, error_msg = validate_data(
         path=target_path,
         expectations=[
-            {"expectation": "ExpectColumnValuesToNotBeNull", "kwargs": {"column": "total_revenue"}},
-            {"expectation": "ExpectColumnValuesToBeGreaterThan", "kwargs": {"column": "total_orders", "value": 0}},
+            {
+                "expectation": "ExpectColumnValuesToNotBeNull",
+                "kwargs": {"column": "total_revenue"},
+            },
+            {
+                "expectation": "ExpectColumnValuesToBeGreaterThan",
+                "kwargs": {"column": "total_orders", "value": 0},
+            },
         ],
         data_format="parquet",
         suite_name="suite_gx_sales_summary",

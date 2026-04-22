@@ -3,7 +3,7 @@
 import os
 from abc import ABC, abstractmethod
 
-from core.config import get_s3_paths
+from core.config import BASE_DATE, get_s3_paths
 from core.connection import ConnectionFactory
 from core.logger import logger
 
@@ -14,7 +14,7 @@ class BaseIngestor(ABC):
     def __init__(self, domain: str):
         self.domain = domain
         self.factory = ConnectionFactory()
-        self.paths = get_s3_paths()
+        self.paths = get_s3_paths(BASE_DATE)
 
     @abstractmethod
     def ingest(self):

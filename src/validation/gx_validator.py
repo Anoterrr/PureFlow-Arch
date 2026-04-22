@@ -21,7 +21,7 @@ def validate_data(
     Generic execution engine for validation.
     Returns (success: bool, report_url: str, error_message: Optional[str]).
     """
-    # pylint: disable=too-many-locals
+    # pylint: disable=too-many-locals,too-many-branches,too-many-statements
     factory = ConnectionFactory()
     context = get_gx_context()
 
@@ -63,7 +63,7 @@ def validate_data(
             if fmt == "csv"
             else ("read_parquet" if fmt == "parquet" else "read_json_auto")
         )
-        
+
         # Check if file exists before running GX to provide better error messages
         try:
             raw_conn.execute(f"SELECT 1 FROM {read_func}('{path}') LIMIT 1")

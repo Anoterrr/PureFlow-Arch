@@ -20,11 +20,11 @@ class PureFlowEngine:
         Context can include: name, group, format.
         """
         rendered = path.replace("{{ execution_date }}", self.execution_date)
-        
+
         if context:
             for key, value in context.items():
                 rendered = rendered.replace(f"{{{{ {key} }}}}", str(value))
-        
+
             # Handle automatic extensions based on format
             fmt = context.get("format", "").lower()
             ext = ""
@@ -35,9 +35,9 @@ class PureFlowEngine:
             elif fmt == "json":
                 ext = ".json"
             # delta has no extension (directory)
-            
+
             rendered = rendered.replace("{{ extension }}", ext)
-            
+
         return rendered
 
     def quarantine_data(self, source_path: str, reason: str) -> str:
@@ -46,28 +46,36 @@ class PureFlowEngine:
         Returns the new quarantine path.
         """
         source_path = self.render_path(source_path)
-        
+
         # Build quarantine path: s3://bucket/quarantine/dt=YYYY-MM-DD/reason=.../filename
         path_parts = source_path.replace("s3://", "").split("/")
         bucket = path_parts[0]
         filename = path_parts[-1]
-        
+
         quarantine_prefix = f"quarantine/dt={self.execution_date}/reason={reason.replace(' ', '_')}"
         target_quarantine_path = f"s3://{bucket}/{quarantine_prefix}/{filename}"
-        
+
         conn = self.factory.get_duckdb_conn()
         self.factory.setup_s3_auth(conn)
-        
+
         try:
-            logger.warning("🛡️ [Engine] Quarantining data: %s -> %s", source_path, target_quarantine_path)
-            
+            logger.warning(
+                "🛡️ [Engine] Quarantining data: %s -> %s",
+                source_path,
+                target_quarantine_path,
+            )
+
             # Use DuckDB's internal S3 copy capabilities
             # This is a 'move' simulated by COPY
             # In a real S3 we'd use boto3, here we use DuckDB's COPY as a generic file mover
-            conn.execute(f"COPY (SELECT * FROM read_parquet('{source_path}')) TO '{target_quarantine_path}' (FORMAT 'PARQUET')")
-            
+            conn.execute(
+                f"COPY (SELECT * FROM read_parquet('{source_path}')) "
+                f"TO '{target_quarantine_path}' (FORMAT 'PARQUET')"
+            )
+
             return target_quarantine_path
-        except Exception as e:
+        except Exception as e:  # pylint: disable=broad-exception-caught
+            # Broad exception caught to prevent engine crash during quarantine attempt
             logger.error("❌ [Engine] Failed to quarantine: %s", str(e))
             return source_path
         finally:
@@ -125,7 +133,7 @@ class PureFlowEngine:
                     COPY ({final_query})
                     TO '{target_path}' (FORMAT '{target_format.upper()}')
                 """
-            
+
             conn.execute(copy_query)
 
             # Get count for metadata
@@ -140,7 +148,8 @@ class PureFlowEngine:
                 "format": target_format,
             }
 
-        except Exception as e:
+        except Exception as e:  # pylint: disable=broad-exception-caught
+            # Broad exception re-raised after logging for context
             logger.error("❌ [Engine] Failed execution: %s", str(e))
             raise e
         finally:

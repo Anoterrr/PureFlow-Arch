@@ -1,43 +1,10 @@
-# Welcome to Great Expectations! Always know what to expect from your data.
-#
-# Here you can define datasources, batch kwargs generators, integrations and
-# more. This file is intended to be committed to your repo. For help with
-# configuration please:
-#   - Read our docs: https://docs.greatexpectations.io/docs/guides/connecting_to_your_data/connect_to_data_overview/#2-configure-your-datasource
-#   - Join our slack channel: http://greatexpectations.io/slack
-
-# config_version refers to the syntactic version of this config file, and is used in maintaining backwards compatibility
-# It is auto-generated and usually does not need to be changed.
-config_version: 4.0
-
-# This config file supports variable substitution which enables: 1) keeping
-# secrets out of source control & 2) environment-based configuration changes
-# such as staging vs prod.
-#
-# When GX encounters substitution syntax (like `my_key: ${my_value}` or
-# `my_key: $my_value`) in the great_expectations.yml file, it will attempt
-# to replace the value of `my_key` with the value from an environment
-# variable `my_value` or a corresponding key read from this config file,
-# which is defined through the `config_variables_file_path`.
-# Environment variables take precedence over variables defined here.
-#
-# Substitution values defined here can be a simple (non-nested) value,
-# nested value such as a dictionary, or an environment variable (i.e. ${ENV_VAR})
-#
-#
-# https://docs.greatexpectations.io/docs/guides/setup/configuring_data_contexts/how_to_configure_credentials
-
+config_version: 3.0
 
 config_variables_file_path: uncommitted/config_variables.yml
 
-# The plugins_directory will be added to your python path for custom modules
-# used to override and extend Great Expectations.
 plugins_directory: plugins/
 
 stores:
-# Stores are configurable places to store things like Expectations, Validations
-# Data Docs, and more. These are for advanced users only - most users can simply
-# leave this section alone.
   expectations_store:
     class_name: ExpectationsStore
     store_backend:
@@ -68,10 +35,6 @@ validation_results_store_name: validation_results_store
 checkpoint_store_name: checkpoint_store
 
 data_docs_sites:
-  # Data Docs make it simple to visualize data quality in your project. These
-  # include Expectations, Validations & Profiles. The are built for all
-  # Datasources from JSON artifacts in the local repo including validations &
-  # profiles from the uncommitted directory. Read more at https://docs.greatexpectations.io/docs/terms/data_docs
   local_site:
     class_name: SiteBuilder
     show_how_to_buttons: true
@@ -80,48 +43,5 @@ data_docs_sites:
       base_directory: uncommitted/data_docs/local_site/
     site_index_builder:
       class_name: DefaultSiteIndexBuilder
-fluent_datasources:
-  landing_datasource:
-    type: sql
-    id: 1ff47a5e-d7e9-4878-95a1-5b0764b7b1b1
-    assets:
-      sales_landing_asset:
-        type: query
-        id: 77d0def9-321d-45a1-b6c1-0c48b15a2115
-        batch_metadata: {}
-        batch_definitions:
-          sales_batch_def:
-            id: 391a89f4-41c2-4f32-96ff-3731612c9240
-            partitioner:
-        query: SELECT * FROM read_csv_auto('data/minio_data/landing-zone/sales_erp/dt=2026-04-19/sales.csv')
-    connection_string: 'duckdb:///:memory:'
-  sales_quality_datasource:
-    type: sql
-    id: 63ffa8b1-9ea2-4543-a716-68a0b12ca808
-    assets:
-      sales_bronze_asset:
-        type: query
-        id: b2454adc-51da-4617-90dc-4b9adbd2b6c7
-        batch_metadata: {}
-        batch_definitions:
-          sales_bronze_batch_def:
-            id: b397bc70-92e1-4e6a-bdd3-aa9e23478165
-            partitioner:
-        query: SELECT * FROM read_parquet('s3://bronze/sales_erp/dt=2026-04-19/sales.parquet')
-    connection_string: 'duckdb:///:memory:'
-  ds_suite_gx_stg_sales_bronze_source:
-    type: sql
-    id: 3d97745f-3b3d-47f0-8b80-abbbb77cec7b
-    assets:
-      asset_suite_gx_stg_sales_bronze_source:
-        type: query
-        id: fbabf00f-b951-4fe5-9a27-b6dd103d2445
-        batch_metadata: {}
-        batch_definitions:
-          batch_suite_gx_stg_sales_bronze_source:
-            id: 7e9ade07-d251-4493-b88b-19bba19ef0ac
-            partitioner:
-        query: SELECT * FROM read_csv_auto('s3://landing-zone/sales_erp/dt=2026-04-19/sales.csv')
-    connection_string: 'duckdb:///:memory:'
-analytics_enabled:
-data_context_id: cb18d2b6-ff70-402b-a6c5-4ad1ee031c46
+
+fluent_datasources: {}

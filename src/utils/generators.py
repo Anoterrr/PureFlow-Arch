@@ -6,9 +6,9 @@ import numpy as np
 def generate_base_customers(n_customers):
     """Generates a base dictionary for customer data."""
     return {
-        "id": range(1000, 1000 + n_customers),
-        "name": [f"Customer_{i}" for i in range(n_customers)],
-        "email": [f"customer_{i}@example.com" for i in range(n_customers)],
+        "id": range(1001, 1001 + n_customers), # Start from 1001 to avoid ID 0 issues
+        "name": [f"Customer_{i}" for i in range(1, n_customers + 1)],
+        "email": [f"customer_{i}@example.com" for i in range(1, n_customers + 1)],
         "city": np.random.choice(
             [
                 "São Paulo",
@@ -31,7 +31,7 @@ def generate_base_sales(
     return {
         "id": range(1, n_sales + 1),
         "customer_id": np.random.randint(
-            1000, 1000 + n_customers + customer_id_offset, size=n_sales
+            1001, 1001 + n_customers + customer_id_offset, size=n_sales
         ),
         "price": np.random.uniform(low_amount, high_amount, size=n_sales),
         "product": np.random.choice(

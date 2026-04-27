@@ -7,7 +7,8 @@ import pandas as pd
 import streamlit as st
 from dotenv import load_dotenv
 
-load_dotenv()
+# Only load .env if variables are not already set (prevents overriding Docker env with localhost)
+load_dotenv(override=False)
 
 # --- Page Config ---
 st.set_page_config(page_title="PureFlow BI Dashboard", layout="wide")

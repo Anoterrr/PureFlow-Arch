@@ -6,6 +6,7 @@ from dagster import (
     AssetKey,
     AssetsDefinition,
     MetadataValue,
+    MaterializeResult,
     asset,
 )
 
@@ -54,6 +55,7 @@ class DataPipelineFactory:
                 group_name=group_name,
                 deps=current_deps,
                 compute_kind="gx",
+                description=f"Great Expectations validation for {name} source data.",
                 config_schema={"execution_date": str},
             )
             def source_validation(context):
@@ -67,13 +69,20 @@ class DataPipelineFactory:
                     data_format=source["format"],
                     suite_name=f"suite_{gx_source_name}",
                 )
+
                 if not success:
                     raise ValueError(
                         f"Source validation failed for {name}. \n"
                         f"Reason: {error_msg} \n"
-                        f"Report: {report_url}"
+                        f"Check GX Report: {report_url}"
                     )
-                return MetadataValue.url(report_url)
+
+                return MaterializeResult(
+                    metadata={
+                        "gx_report_link": MetadataValue.url(report_url),
+                        "validation_status": "Success",
+                    }
+                )
 
             assets.append(source_validation)
             current_deps = [AssetKey([gx_source_name])]
@@ -84,15 +93,12 @@ class DataPipelineFactory:
             group_name=group_name,
             deps=current_deps,
             compute_kind="duckdb",
+            description=f"DuckDB transformation for {name}.",
             config_schema={"execution_date": str},
         )
         def main_transformation(context):
             execution_date = context.op_config.get("execution_date")
             engine = PureFlowEngine(execution_date=execution_date)
-
-            # Paths are rendered inside execute_move_and_transform using the engine's render_path
-            # We need to make sure execute_move_and_transform also gets the context
-            # Let's adjust engine.execute_move_and_transform first or pass context here
 
             rendered_source = engine.render_path(source["path"], context=source_context)
             rendered_target = engine.render_path(target["path"], context=target_context)
@@ -104,14 +110,14 @@ class DataPipelineFactory:
                 target_format=target["format"],
                 sql_transform=sql_transform,
             )
-            context.add_output_metadata(
-                {
+
+            return MaterializeResult(
+                metadata={
                     "rows_processed": MetadataValue.int(result["row_count"]),
                     "target_path": MetadataValue.path(result["target_path"]),
                     "status": "Success",
                 }
             )
-            return result
 
         assets.append(main_transformation)
         current_deps = [AssetKey([name])]
@@ -125,6 +131,7 @@ class DataPipelineFactory:
                 group_name=group_name,
                 deps=current_deps,
                 compute_kind="gx",
+                description=f"Great Expectations validation for {name} target data.",
                 config_schema={"execution_date": str},
             )
             def target_validation(context):
@@ -138,6 +145,7 @@ class DataPipelineFactory:
                     data_format=target["format"],
                     suite_name=f"suite_{gx_target_name}",
                 )
+
                 if not success:
                     # Logic to quarantine data on target failure
                     q_path = engine.quarantine_data(rendered_path, error_msg)
@@ -145,9 +153,15 @@ class DataPipelineFactory:
                         f"Target validation failed for {name}. \n"
                         f"Data moved to quarantine: {q_path} \n"
                         f"Reason: {error_msg} \n"
-                        f"Report: {report_url}"
+                        f"Check GX Report: {report_url}"
                     )
-                return MetadataValue.url(report_url)
+
+                return MaterializeResult(
+                    metadata={
+                        "gx_report_link": MetadataValue.url(report_url),
+                        "validation_status": "Success",
+                    }
+                )
 
             assets.append(target_validation)
 

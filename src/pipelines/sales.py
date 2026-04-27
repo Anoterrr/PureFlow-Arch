@@ -27,6 +27,10 @@ sales_bronze_assets = DataPipelineFactory.create_asset(
             "expectation": "ExpectTableRowCountToBeBetween",
             "kwargs": {"min_value": 1, "max_value": 2000000},
         },
+        {
+            "expectation": "ExpectColumnValuesToNotBeNull",
+            "kwargs": {"column": "customer_id"},
+        },
     ],
     target_expectations=[
         {"expectation": "ExpectColumnValuesToNotBeNull", "kwargs": {"column": "id"}},

@@ -1,0 +1,19 @@
+{
+  "expectations": [
+    {
+      "id": "bd20d0b3-a18e-44e7-b8a8-b5483bce0397",
+      "kwargs": {
+        "column": "id"
+      },
+      "meta": {},
+      "severity": "critical",
+      "type": "expect_column_values_to_not_be_null"
+    }
+  ],
+  "id": "5c7d2e37-072f-497d-a58a-72cb6836b2ad",
+  "meta": {
+    "great_expectations_version": "1.12.3"
+  },
+  "name": "suite_gx_stg_customers_bronze_source",
+  "notes": null
+}

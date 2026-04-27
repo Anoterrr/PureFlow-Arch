@@ -20,6 +20,30 @@ services:
     networks:
       - pureflow_net
 
+  # --- MINIO INIT: Creates buckets automatically ---
+  minio_init:
+    image: minio/mc
+    container_name: pureflow_minio_init
+    depends_on:
+      minio:
+        condition: service_healthy
+    environment:
+      - STORAGE_USER=${STORAGE_USER}
+      - STORAGE_PASSWORD=${STORAGE_PASSWORD}
+    entrypoint: >
+      /bin/sh -c "
+      until (/usr/bin/mc alias set pureflow http://minio:9000 $${STORAGE_USER} $${STORAGE_PASSWORD}) do echo 'Waiting for MinIO...' && sleep 1; done;
+      /usr/bin/mc mb pureflow/${S3_BUCKET_LANDING:-landing-zone} || true;
+      /usr/bin/mc mb pureflow/${S3_BUCKET_BRONZE:-bronze} || true;
+      /usr/bin/mc mb pureflow/${S3_BUCKET_SILVER:-silver} || true;
+      /usr/bin/mc mb pureflow/${S3_BUCKET_GOLD:-gold} || true;
+      /usr/bin/mc mb pureflow/${S3_BUCKET_QUARANTINE:-quarantine} || true;
+      echo '✅ Buckets created!';
+      exit 0;
+      "
+    networks:
+      - pureflow_net
+
   # --- DAGSTER: Modern Data Orchestrator ---
   dagster:
     build: .
@@ -30,7 +54,7 @@ services:
       - STORAGE_USER=${STORAGE_USER}
       - STORAGE_PASSWORD=${STORAGE_PASSWORD}
       - S3_ENDPOINT=http://minio:9000
-      - DUCKDB_PATH=${DUCKDB_PATH}
+      - DUCKDB_PATH=/app/data/pureflow_lakehouse.db
     working_dir: /app
     volumes:
       - .:/app
@@ -48,6 +72,8 @@ services:
     depends_on:
       minio:
         condition: service_healthy
+      minio_init:
+        condition: service_completed_successfully
     networks:
       - pureflow_net
 
@@ -79,13 +105,18 @@ services:
       - STORAGE_USER=${STORAGE_USER}
       - STORAGE_PASSWORD=${STORAGE_PASSWORD}
       - S3_ENDPOINT=http://minio:9000
+      - DUCKDB_PATH=/app/data/pureflow_lakehouse.db
+      - DBT_READ_ONLY=true
       - PYTHONPATH=/app/src
     volumes:
       - .:/app
     ports:
       - "8081:8081"
     # Port 8081 to avoid conflict with streamlit
-    command: dbt docs serve --project-dir /app/dbt --profiles-dir /app/dbt --port 8081 --host 0.0.0.0
+    command: >
+      bash -c "cd /app/dbt && 
+               dbt docs generate --profiles-dir . --profile pureflow && 
+               dbt docs serve --profiles-dir . --profile pureflow --port 8081 --host 0.0.0.0"
     depends_on:
       dagster:
         condition: service_started

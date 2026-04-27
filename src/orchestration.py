@@ -157,11 +157,24 @@ test_quality_ops_config = {
     "inject_corrupt_bronze": {"config": {"execution_date": DEFAULT_DATE}},
 }
 
+# Config for data generation assets
+data_gen_ops_config = {
+    "generate_clean_data": {"config": {"execution_date": DEFAULT_DATE}},
+    "generate_dirty_data": {"config": {"execution_date": DEFAULT_DATE}},
+}
+
 # Main Transformation Pipeline (Excludes generators and corruption tools)
 pureflow_pipeline_job = define_asset_job(  # pylint: disable=assignment-from-no-return
     name="pureflow_pipeline_job",
     selection=AssetSelection.all() - AssetSelection.groups("data_generators", "test_quality"),
     config={"ops": core_pipeline_ops_config},
+)
+
+# Job for generating synthetic data
+data_generation_job = define_asset_job(
+    name="data_generation_job",
+    selection=AssetSelection.groups("data_generators"),
+    config={"ops": data_gen_ops_config},
 )
 
 # Specific job to test Quality Gates by corrupting and then running the pipeline
@@ -185,5 +198,5 @@ all_assets = [
 defs = Definitions(
     assets=all_assets,
     resources={"dbt": dbt_resource},
-    jobs=[pureflow_pipeline_job, quality_test_job],
+    jobs=[pureflow_pipeline_job, data_generation_job, quality_test_job],
 )

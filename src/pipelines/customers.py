@@ -25,7 +25,7 @@ customers_bronze_assets = DataPipelineFactory.create_asset(
     source_expectations=[
         {
             "expectation": "ExpectColumnValuesToNotBeNull",
-            "kwargs": {"column": "customer_id"},
+            "kwargs": {"column": "id"},
         },
     ],
     target_expectations=[

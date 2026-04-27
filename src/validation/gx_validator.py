@@ -36,6 +36,11 @@ def validate_data(
     try:
         # 1. Setup Suite and Add Expectations
         suite = get_or_create_suite(context, suite_name)
+        
+        # Clear existing expectations to ensure only the ones defined in the asset are used
+        # This prevents old/deleted expectations from persisting in the JSON suites
+        for expectation in list(suite.expectations):
+            suite.delete_expectation(expectation)
 
         for check in expectations:
             exp_name = check.get("expectation")
@@ -52,9 +57,12 @@ def validate_data(
         # 2. Setup Data Asset
         asset_name = f"asset_{suite_name}"
         try:
-            datasource.delete_asset(asset_name)
-        except (ValueError, LookupError):
-            pass
+            # Check if asset exists before deleting
+            existing_assets = [a.name for a in datasource.assets]
+            if asset_name in existing_assets:
+                datasource.delete_asset(asset_name)
+        except Exception as e:
+            logger.debug("Non-critical error deleting asset %s: %s", asset_name, str(e))
 
         # Read function for GX query
         fmt = data_format.lower()
@@ -80,13 +88,30 @@ def validate_data(
         # 3. Run Validation
         val_name = f"val_{suite_name}"
         try:
-            context.validation_definitions.delete(val_name)
-        except (ValueError, LookupError):
-            pass
-
-        val_def = context.validation_definitions.add(
-            ValidationDefinition(name=val_name, data=batch_def, suite=suite)
-        )
+            # Try to get existing or create new one to avoid 'already exists' errors
+            try:
+                val_def = context.validation_definitions.get(val_name)
+                # Update with new data and suite
+                val_def.data = batch_def
+                val_def.suite = suite
+                # In some GX versions we might need to save/persist changes
+            except (ValueError, KeyError, LookupError):
+                val_def = context.validation_definitions.add(
+                    ValidationDefinition(name=val_name, data=batch_def, suite=suite)
+                )
+        except Exception as e:
+            # Fallback: if get/add fails, try one last time with a clean delete attempt
+            logger.warning("🔄 [Validator] Conflict with ValidationDefinition %s, attempting fallback...", val_name)
+            try:
+                # Force delete and re-add
+                for v in list(context.validation_definitions):
+                    if v.name == val_name:
+                        context.validation_definitions.delete(val_name)
+                val_def = context.validation_definitions.add(
+                    ValidationDefinition(name=val_name, data=batch_def, suite=suite)
+                )
+            except Exception as final_e:
+                raise RuntimeError(f"Failed to manage GX ValidationDefinition: {str(final_e)}") from final_e
 
         result = val_def.run()
         success = result.success

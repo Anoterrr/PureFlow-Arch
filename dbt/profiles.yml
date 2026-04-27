@@ -3,6 +3,7 @@ pureflow:
     dev:
       type: duckdb
       path: "{{ env_var('DUCKDB_PATH', 'data/pureflow_lakehouse.db') }}"
+      read_only: "{{ env_var('DBT_READ_ONLY', 'false') | lower }}"
       schema: gold
       extensions:
         - httpfs

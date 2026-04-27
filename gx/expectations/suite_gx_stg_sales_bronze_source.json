@@ -1,7 +1,7 @@
 {
   "expectations": [
     {
-      "id": "7ea34973-d56e-4ec9-a300-abf1a180a500",
+      "id": "336f07c3-212a-4373-ae7f-ea88ffbe3edb",
       "kwargs": {
         "max_value": 2000000,
         "min_value": 1
@@ -9,6 +9,15 @@
       "meta": {},
       "severity": "critical",
       "type": "expect_table_row_count_to_be_between"
+    },
+    {
+      "id": "c58ea4be-b212-475d-95c3-d05c0111c49c",
+      "kwargs": {
+        "column": "customer_id"
+      },
+      "meta": {},
+      "severity": "critical",
+      "type": "expect_column_values_to_not_be_null"
     }
   ],
   "id": "2ad6dc01-9d4c-4605-975b-4bd122e30958",

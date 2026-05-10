@@ -4,6 +4,7 @@ from typing import Any, Dict, List, Optional
 
 from dagster import (
     AssetKey,
+    AssetObservation,
     AssetsDefinition,
     MetadataValue,
     MaterializeResult,
@@ -70,6 +71,19 @@ class DataPipelineFactory:
                     suite_name=f"suite_{gx_source_name}",
                 )
 
+                # Use AssetObservation to ensure metadata persists even on failure
+                # Numerical 'validation_score' enables 'Metadata Plots' in Dagster UI
+                context.log_event(
+                    AssetObservation(
+                        asset_key=context.asset_key,
+                        metadata={
+                            "gx_report_link": MetadataValue.url(report_url),
+                            "validation_status": MetadataValue.text("Success" if success else "Failed"),
+                            "validation_score": MetadataValue.float(1.0 if success else 0.0),
+                        }
+                    )
+                )
+
                 if not success:
                     raise ValueError(
                         f"Source validation failed for {name}. \n"
@@ -80,7 +94,8 @@ class DataPipelineFactory:
                 return MaterializeResult(
                     metadata={
                         "gx_report_link": MetadataValue.url(report_url),
-                        "validation_status": "Success",
+                        "validation_status": MetadataValue.text("Success"),
+                        "validation_score": MetadataValue.float(1.0),
                     }
                 )
 
@@ -146,6 +161,19 @@ class DataPipelineFactory:
                     suite_name=f"suite_{gx_target_name}",
                 )
 
+                # Use AssetObservation to ensure metadata persists even on failure
+                # Numerical 'validation_score' enables 'Metadata Plots' in Dagster UI
+                context.log_event(
+                    AssetObservation(
+                        asset_key=context.asset_key,
+                        metadata={
+                            "gx_report_link": MetadataValue.url(report_url),
+                            "validation_status": MetadataValue.text("Success" if success else "Failed"),
+                            "validation_score": MetadataValue.float(1.0 if success else 0.0),
+                        }
+                    )
+                )
+
                 if not success:
                     # Logic to quarantine data on target failure
                     q_path = engine.quarantine_data(rendered_path, error_msg)
@@ -159,7 +187,8 @@ class DataPipelineFactory:
                 return MaterializeResult(
                     metadata={
                         "gx_report_link": MetadataValue.url(report_url),
-                        "validation_status": "Success",
+                        "validation_status": MetadataValue.text("Success"),
+                        "validation_score": MetadataValue.float(1.0),
                     }
                 )
 

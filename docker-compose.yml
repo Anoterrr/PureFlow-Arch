@@ -55,6 +55,12 @@ services:
       - STORAGE_PASSWORD=${STORAGE_PASSWORD}
       - S3_ENDPOINT=http://minio:9000
       - DUCKDB_PATH=/app/data/pureflow_lakehouse.db
+      - AWS_ACCESS_KEY_ID=${STORAGE_USER}
+      - AWS_SECRET_ACCESS_KEY=${STORAGE_PASSWORD}
+      - AWS_ENDPOINT_URL=http://minio:9000
+      - AWS_REGION=us-east-1
+      - DUCKDB_S3_USE_SSL=false
+      - DUCKDB_S3_URL_STYLE=path
     working_dir: /app
     volumes:
       - .:/app
@@ -64,11 +70,18 @@ services:
     # COMPILATION GATE: Ensures dbt manifest is fresh before starting Dagster
     command: >
       bash -c "echo '🚀 Initializing PureFlow Environment...' &&
+               mkdir -p /app/data &&
                cd dbt && 
                dbt compile --profiles-dir . --profile pureflow && 
                cd /app && 
                echo '✅ dbt Manifest updated. Starting Dagster...' &&
                dagster dev -h 0.0.0.0 -p 3000 -f /app/src/orchestration.py"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
     depends_on:
       minio:
         condition: service_healthy
@@ -86,6 +99,10 @@ services:
       - STORAGE_PASSWORD=${STORAGE_PASSWORD}
       - S3_ENDPOINT=http://minio:9000
       - PYTHONPATH=/app/src
+      - AWS_ACCESS_KEY_ID=${STORAGE_USER}
+      - AWS_SECRET_ACCESS_KEY=${STORAGE_PASSWORD}
+      - AWS_ENDPOINT_URL=http://minio:9000
+      - AWS_REGION=us-east-1
     volumes:
       - .:/app
     ports:
@@ -108,18 +125,24 @@ services:
       - DUCKDB_PATH=/app/data/pureflow_lakehouse.db
       - DBT_READ_ONLY=true
       - PYTHONPATH=/app/src
+      - AWS_ACCESS_KEY_ID=${STORAGE_USER}
+      - AWS_SECRET_ACCESS_KEY=${STORAGE_PASSWORD}
+      - AWS_ENDPOINT_URL=http://minio:9000
+      - AWS_REGION=us-east-1
     volumes:
       - .:/app
     ports:
       - "8081:8081"
-    # Port 8081 to avoid conflict with streamlit
+      - "8082:8082"
+    # Port 8081 for dbt, 8082 for GX Reports
     command: >
-      bash -c "cd /app/dbt && 
+      bash -c "python3 -m http.server 8082 --directory /app/gx/uncommitted/data_docs/local_site & 
+               cd /app/dbt && 
                dbt docs generate --profiles-dir . --profile pureflow && 
                dbt docs serve --profiles-dir . --profile pureflow --port 8081 --host 0.0.0.0"
     depends_on:
       dagster:
-        condition: service_started
+        condition: service_healthy
     networks:
       - pureflow_net
 

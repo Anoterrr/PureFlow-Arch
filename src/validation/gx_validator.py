@@ -94,24 +94,16 @@ def validate_data(
                 # Update with new data and suite
                 val_def.data = batch_def
                 val_def.suite = suite
-                # In some GX versions we might need to save/persist changes
             except (ValueError, KeyError, LookupError):
-                val_def = context.validation_definitions.add(
-                    ValidationDefinition(name=val_name, data=batch_def, suite=suite)
-                )
+                try:
+                    val_def = context.validation_definitions.add(
+                        ValidationDefinition(name=val_name, data=batch_def, suite=suite)
+                    )
+                except Exception:
+                    # Final fallback for race condition on ValidationDefinition
+                    val_def = context.validation_definitions.get(val_name)
         except Exception as e:
-            # Fallback: if get/add fails, try one last time with a clean delete attempt
-            logger.warning("🔄 [Validator] Conflict with ValidationDefinition %s, attempting fallback...", val_name)
-            try:
-                # Force delete and re-add
-                for v in list(context.validation_definitions):
-                    if v.name == val_name:
-                        context.validation_definitions.delete(val_name)
-                val_def = context.validation_definitions.add(
-                    ValidationDefinition(name=val_name, data=batch_def, suite=suite)
-                )
-            except Exception as final_e:
-                raise RuntimeError(f"Failed to manage GX ValidationDefinition: {str(final_e)}") from final_e
+            raise RuntimeError(f"Failed to manage GX ValidationDefinition: {str(e)}") from e
 
         result = val_def.run()
         success = result.success
@@ -128,14 +120,11 @@ def validate_data(
         raw_conn.close()
 
     # Dynamic path to the generated Data Docs for this specific suite
-    report_path = os.path.abspath(
-        f"gx/uncommitted/data_docs/local_site/validations/{suite_name}"
-    )
+    base_docs_path = os.path.abspath("gx/uncommitted/data_docs/local_site")
+    report_path = os.path.join(base_docs_path, "validations", suite_name)
 
     # Try to find the most recent HTML report
-    latest_report = (
-        f"file://{os.path.abspath('gx/uncommitted/data_docs/local_site/index.html')}"
-    )
+    latest_report_file = os.path.join(base_docs_path, "index.html")
     try:
         if os.path.exists(report_path):
             html_files = []
@@ -145,8 +134,13 @@ def validate_data(
                         html_files.append(os.path.join(root, file))
 
             if html_files:
-                latest_report = f"file://{max(html_files, key=os.path.getmtime)}"
+                latest_report_file = max(html_files, key=os.path.getmtime)
     except Exception as e:  # pylint: disable=broad-exception-caught
         logger.warning("Could not find latest report: %s", str(e))
 
-    return success, latest_report, error_msg
+    # Convert local file path to HTTP URL
+    # /app/gx/uncommitted/data_docs/local_site/index.html -> http://localhost:8082/index.html
+    relative_path = os.path.relpath(latest_report_file, base_docs_path)
+    web_report_url = f"http://localhost:8082/{relative_path}"
+
+    return success, web_report_url, error_msg

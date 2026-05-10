@@ -61,6 +61,9 @@ services:
       - AWS_REGION=us-east-1
       - DUCKDB_S3_USE_SSL=false
       - DUCKDB_S3_URL_STYLE=path
+      - AWS_S3_ADDRESSING_STYLE=path
+      - AWS_S3_PATH_STYLE_ACCESS=true
+      - IS_DOCKER=true
     working_dir: /app
     volumes:
       - .:/app
@@ -103,6 +106,9 @@ services:
       - AWS_SECRET_ACCESS_KEY=${STORAGE_PASSWORD}
       - AWS_ENDPOINT_URL=http://minio:9000
       - AWS_REGION=us-east-1
+      - AWS_S3_ADDRESSING_STYLE=path
+      - AWS_S3_PATH_STYLE_ACCESS=true
+      - IS_DOCKER=true
     volumes:
       - .:/app
     ports:
@@ -129,6 +135,9 @@ services:
       - AWS_SECRET_ACCESS_KEY=${STORAGE_PASSWORD}
       - AWS_ENDPOINT_URL=http://minio:9000
       - AWS_REGION=us-east-1
+      - AWS_S3_ADDRESSING_STYLE=path
+      - AWS_S3_PATH_STYLE_ACCESS=true
+      - IS_DOCKER=true
     volumes:
       - .:/app
     ports:

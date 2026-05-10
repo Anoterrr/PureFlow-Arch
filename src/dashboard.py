@@ -6,6 +6,7 @@ import duckdb
 import pandas as pd
 import streamlit as st
 from dotenv import load_dotenv
+from core.config import get_s3_connection_config
 
 # Only load .env if variables are not already set (prevents overriding Docker env with localhost)
 load_dotenv(override=False)
@@ -25,16 +26,15 @@ def get_duckdb_conn():
     conn = duckdb.connect(database=":memory:")
 
     # Configure S3/MinIO
-    s3_endpoint = os.getenv("S3_ENDPOINT", "localhost:9000").replace("http://", "")
-    storage_user = os.getenv("STORAGE_USER", "admin")
-    storage_password = os.getenv("STORAGE_PASSWORD", "strongpassword123")
+    s3_cfg = get_s3_connection_config()
 
     conn.execute("INSTALL httpfs; LOAD httpfs;")
-    conn.execute(f"SET s3_endpoint = '{s3_endpoint}';")
-    conn.execute(f"SET s3_access_key_id = '{storage_user}';")
-    conn.execute(f"SET s3_secret_access_key = '{storage_password}';")
-    conn.execute("SET s3_use_ssl = false;")
-    conn.execute("SET s3_url_style = 'path';")
+    conn.execute(f"SET s3_endpoint = '{s3_cfg['s3_endpoint']}';")
+    conn.execute(f"SET s3_access_key_id = '{s3_cfg['s3_access_key_id']}';")
+    conn.execute(f"SET s3_secret_access_key = '{s3_cfg['s3_secret_access_key']}';")
+    conn.execute(f"SET s3_use_ssl = {s3_cfg['s3_use_ssl']};")
+    conn.execute(f"SET s3_url_style = '{s3_cfg['s3_url_style']}';")
+    conn.execute(f"SET s3_region = '{s3_cfg['s3_region']}';")
 
     return conn
 

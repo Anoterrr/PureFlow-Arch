@@ -18,6 +18,7 @@ dependencies = [
     "dagster>=1.7.0",
     "dagster-webserver>=1.7.0",
     "dagster-dbt>=0.23.0",
+    "dagster-ge>=0.23.0",
     "streamlit>=1.32.0",
     "sqlalchemy>=2.0.0",
     "duckdb-engine>=0.11.0",

@@ -40,7 +40,7 @@ customers_bronze_assets = DataPipelineFactory.create_asset(
 customers_silver_assets = DataPipelineFactory.create_asset(
     name="customers_silver",
     group_name="silver",
-    depends_on=["gx_stg_customers_bronze"], # Depends on the POST-validation of bronze
+    depends_on=["stg_customers_bronze"], # Point directly to bronze asset
     source={
         "path": "s3://bronze/customers_crm/dt={{ execution_date }}/stg_customers_bronze.parquet",
         "format": "parquet",

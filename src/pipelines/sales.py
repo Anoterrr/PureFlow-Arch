@@ -41,7 +41,7 @@ sales_bronze_assets = DataPipelineFactory.create_asset(
 sales_silver_assets = DataPipelineFactory.create_asset(
     name="sales_silver",
     group_name="silver",
-    depends_on=["gx_stg_sales_bronze"], # Depends on the POST-validation of bronze
+    depends_on=["stg_sales_bronze"], # Point directly to bronze asset
     source={
         "path": "s3://bronze/sales_erp/dt={{ execution_date }}/stg_sales_bronze.parquet",
         "format": "parquet",

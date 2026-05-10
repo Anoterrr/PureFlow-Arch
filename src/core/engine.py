@@ -1,17 +1,18 @@
 """Core Engine for executing data engineering tasks using DuckDB."""
 
-from datetime import datetime
 from typing import Any, Dict, Optional
 
+from deltalake import write_deltalake
 from core.connection import ConnectionFactory
 from core.logger import logger
+from core.config import BASE_DATE, get_s3_connection_config
 
 
 class PureFlowEngine:
     """Technically executes data movement, transformation and validation tasks."""
 
     def __init__(self, execution_date: str = None):
-        self.execution_date = execution_date or datetime.now().strftime("%Y-%m-%d")
+        self.execution_date = execution_date or BASE_DATE
         self.factory = ConnectionFactory()
 
     def render_path(self, path: str, context: Optional[Dict[str, str]] = None) -> str:
@@ -40,7 +41,7 @@ class PureFlowEngine:
 
         return rendered
 
-    def quarantine_data(self, source_path: str, reason: str) -> str:
+    def quarantine_data(self, source_path: str, reason: str, source_format: str = "parquet") -> str:
         """
         Moves failing data to a quarantine prefix in S3.
         Returns the new quarantine path.
@@ -50,7 +51,7 @@ class PureFlowEngine:
         # Build quarantine path: s3://bucket/quarantine/dt=YYYY-MM-DD/reason=.../filename
         path_parts = source_path.replace("s3://", "").split("/")
         bucket = path_parts[0]
-        filename = path_parts[-1]
+        filename = path_parts[-1] if path_parts[-1] else path_parts[-2] # Handle trailing slash for Delta
 
         quarantine_prefix = f"quarantine/dt={self.execution_date}/reason={reason.replace(' ', '_')}"
         target_quarantine_path = f"s3://{bucket}/{quarantine_prefix}/{filename}"
@@ -65,11 +66,19 @@ class PureFlowEngine:
                 target_quarantine_path,
             )
 
+            # Detect format for reading during quarantine
+            fmt = source_format.lower()
+            if fmt == "delta":
+                read_func = "delta_scan"
+            elif fmt in ["csv", "json"]:
+                read_func = f"read_{fmt}_auto"
+            else:
+                read_func = "read_parquet"
+
             # Use DuckDB's internal S3 copy capabilities
             # This is a 'move' simulated by COPY
-            # In a real S3 we'd use boto3, here we use DuckDB's COPY as a generic file mover
             conn.execute(
-                "COPY (SELECT * FROM read_parquet(?)) TO ? (FORMAT 'PARQUET')",
+                f"COPY (SELECT * FROM {read_func}(?)) TO ? (FORMAT 'PARQUET')",
                 [source_path, target_quarantine_path]
             )
 
@@ -92,7 +101,7 @@ class PureFlowEngine:
     ) -> Dict[str, Any]:
         """
         Executes a move from source to target with an optional SQL transformation.
-        Supports DELTA format for ACID guarantees.
+        Supports DELTA format using delta-rs for proper transaction logs.
         """
         source_path = self.render_path(source_path)
         target_path = self.render_path(target_path)
@@ -111,7 +120,10 @@ class PureFlowEngine:
 
             # 1. Define the source read function
             fmt = source_format.lower()
-            read_func = f"read_{fmt}_auto" if fmt in ["csv", "json"] else "read_parquet"
+            if fmt == "delta":
+                read_func = "delta_scan"
+            else:
+                read_func = f"read_{fmt}_auto" if fmt in ["csv", "json"] else "read_parquet"
 
             # 2. Build the query
             conn.execute(
@@ -124,20 +136,41 @@ class PureFlowEngine:
             )
 
             # 3. Execute and Write
-            # Support for Delta Lake via DuckDB's DELTA extension
             if target_format.upper() == "DELTA":
-                # Ensure the target directory exists for Delta
-                copy_query = f"COPY ({final_query}) TO '{target_path}' (FORMAT 'DELTA')"
+                logger.info("📦 [Engine] Writing to Delta Lake via delta-rs...")
+                # Fetch as Arrow for high-performance zero-copy transfer to delta-rs
+                result_arrow = conn.execute(final_query).fetch_arrow_table()
+                row_count = len(result_arrow)
+
+                s3_cfg = get_s3_connection_config()
+                # Use the resolved endpoint (which we now force to IP or 'minio')
+                endpoint = s3_cfg['s3_endpoint']
+                if not endpoint.startswith("http"):
+                    endpoint = f"http://{endpoint}"
+
+                storage_options = {
+                    "endpoint_url": endpoint,
+                    "access_key_id": s3_cfg["s3_access_key_id"],
+                    "secret_access_key": s3_cfg["s3_secret_access_key"],
+                    "region": s3_cfg["s3_region"],
+                    "allow_http": "true",
+                    "s3_allow_unsafe_rename": "true", # Needed for MinIO/S3 non-atomic renames
+                }
+
+                write_deltalake(
+                    target_path,
+                    result_arrow,
+                    mode="overwrite",
+                    storage_options=storage_options
+                )
             else:
+                # Standard DuckDB COPY for other formats
                 copy_query = f"""
                     COPY ({final_query})
                     TO '{target_path}' (FORMAT '{target_format.upper()}')
                 """
-
-            conn.execute(copy_query)
-
-            # Get count for metadata
-            row_count = conn.execute("SELECT count(*) FROM source_data").fetchone()[0]
+                conn.execute(copy_query)
+                row_count = conn.execute("SELECT count(*) FROM source_data").fetchone()[0]
 
             logger.info("✅ [Engine] Success! Processed %d rows using %s.", row_count, target_format)
 

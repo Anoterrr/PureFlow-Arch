@@ -1,7 +1,7 @@
 {
   "expectations": [
     {
-      "id": "efd699ea-26f4-41c1-9349-bf5f1599ce20",
+      "id": "73f104c8-5de9-4be3-88ba-e58b83800f8e",
       "kwargs": {
         "max_value": 2000000,
         "min_value": 1
@@ -11,7 +11,7 @@
       "type": "expect_table_row_count_to_be_between"
     },
     {
-      "id": "9416b377-469b-45a4-a965-5447eedbaccd",
+      "id": "394ccba2-9c4b-4907-aab8-ef5522fe29f1",
       "kwargs": {
         "column": "customer_id"
       },
@@ -20,10 +20,10 @@
       "type": "expect_column_values_to_not_be_null"
     }
   ],
-  "id": "2ad6dc01-9d4c-4605-975b-4bd122e30958",
+  "id": "43658097-3a00-401f-b5f7-7fbd62000441",
   "meta": {
-    "great_expectations_version": "1.12.3"
+    "great_expectations_version": "1.17.1"
   },
-  "name": "suite_gx_stg_sales_bronze_source",
+  "name": "check_stg_sales_bronze_source",
   "notes": null
 }

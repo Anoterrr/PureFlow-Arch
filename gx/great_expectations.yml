@@ -1,70 +1,45 @@
-fluent_datasources:
-  ds_suite_gx_stg_customers_bronze_source:
-    type: sql
-    id: 488b619f-c809-414a-acac-2259d2f2548a
-    assets:
-      asset_suite_gx_stg_customers_bronze_source:
-        type: query
-        id: 7d19b3dc-539f-4a01-bc62-3d308ae750ac
-        batch_metadata: {}
-        batch_definitions:
-          batch_suite_gx_stg_customers_bronze_source:
-            id: 420f95f0-ed42-4aeb-ba00-8568c5a8c2d8
-            partitioner:
-        query: SELECT * FROM 
-          read_json_auto('s3://landing-zone/customers_crm/dt=2026-04-19/customers.json')
-    connection_string: 'duckdb:///:memory:'
-  ds_suite_gx_stg_sales_bronze_source:
-    type: sql
-    id: 5bf7539b-f6e2-4d56-bf6b-21ae75f37004
-    assets:
-      asset_suite_gx_stg_sales_bronze_source:
-        type: query
-        id: 20da6b50-3dda-41bb-acb0-e403a6d3a9fb
-        batch_metadata: {}
-        batch_definitions:
-          batch_suite_gx_stg_sales_bronze_source:
-            id: 4ede8e51-2b34-45f4-b517-59d6b4fed687
-            partitioner:
-        query: SELECT * FROM 
-          read_csv_auto('s3://landing-zone/sales_erp/dt=2026-04-19/sales.csv')
-    connection_string: 'duckdb:///:memory:'
 config_version: 3.0
 expectations_store_name: expectations_store
 validation_results_store_name: validation_results_store
 checkpoint_store_name: checkpoint_store
-plugins_directory: /app/gx/plugins
+plugins_directory: plugins
 stores:
   expectations_store:
     class_name: ExpectationsStore
     store_backend:
       class_name: TupleFilesystemStoreBackend
-      base_directory: /app/gx/expectations
+      base_directory: expectations
   validation_results_store:
     class_name: ValidationResultsStore
     store_backend:
       class_name: TupleFilesystemStoreBackend
-      base_directory: /app/gx/uncommitted/validations
+      base_directory: uncommitted/validations
   checkpoint_store:
     class_name: CheckpointStore
     store_backend:
       class_name: TupleFilesystemStoreBackend
       suppress_store_backend_id: true
-      base_directory: /app/gx/checkpoints
+      base_directory: checkpoints
   validation_definition_store:
     class_name: ValidationDefinitionStore
     store_backend:
       class_name: TupleFilesystemStoreBackend
-      base_directory: /app/gx/validation_definitions
+      base_directory: validation_definitions
 data_docs_sites:
   local_site:
     class_name: SiteBuilder
     show_how_to_buttons: true
     store_backend:
       class_name: TupleFilesystemStoreBackend
-      base_directory: /app/gx/uncommitted/data_docs/local_site
+      base_directory: uncommitted/data_docs/local_site
     site_index_builder:
       class_name: DefaultSiteIndexBuilder
-config_variables_file_path: /app/gx/uncommitted/config_variables.yml
+config_variables_file_path: uncommitted/config_variables.yml
 analytics_enabled:
 data_context_id: cb18d2b6-ff70-402b-a6c5-4ad1ee031c46
+fluent_datasources:
+  ds_check_stg_customers_bronze_source:
+    type: sql
+    id: 390c9971-c8c4-4653-9c17-467c0d94b432
+    connection_string: 
+      duckdb:////app/data/gx_val_ds_check_stg_customers_bronze_source.db

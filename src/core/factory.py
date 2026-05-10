@@ -1,22 +1,27 @@
 """Factory Pattern for creating Data Pipelines as Dagster Assets."""
 
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Union
 
 from dagster import (
+    AssetCheckResult,
+    AssetCheckSeverity,
     AssetKey,
     AssetObservation,
     AssetsDefinition,
+    AssetChecksDefinition,
     MetadataValue,
     MaterializeResult,
     asset,
+    asset_check,
 )
 
 from core.engine import PureFlowEngine
-from validation.gx_validator import validate_data
+from core.logger import logger
+from core.quality import GreatExpectationsResource
 
 
 class DataPipelineFactory:
-    """Creates standardized Dagster Assets for data ingestion and transformation."""
+    """Creates standardized Dagster Assets and Checks for data ingestion and transformation."""
 
     @staticmethod
     def load_sql(path: str) -> str:
@@ -34,75 +39,20 @@ class DataPipelineFactory:
         source_expectations: Optional[List[Dict[str, Any]]] = None,
         target_expectations: Optional[List[Dict[str, Any]]] = None,
         depends_on: Optional[List[str]] = None,
-    ) -> List[AssetsDefinition]:
+    ) -> List[Union[AssetsDefinition, AssetChecksDefinition]]:
         """
-        Generates a sequence of Dagster Assets:
-        [Source Validation (GX)] -> [Transformation (DuckDB)] -> [Target Validation (GX)].
-        Returns a list of AssetDefinitions to be registered.
+        Generates a sequence of Dagster Assets and Checks:
+        [Transformation (DuckDB)] -> [Source Check (GX)] & [Target Check (GX)].
+        Returns a list of AssetDefinitions and AssetChecksDefinitions to be registered.
         """
-        assets = []
+        assets_and_checks = []
         current_deps = [AssetKey([dep]) for dep in depends_on] if depends_on else []
 
         # Context for path rendering
         source_context = {"name": name, "group": group_name, "format": source["format"]}
         target_context = {"name": name, "group": group_name, "format": target["format"]}
 
-        # 1. Source Validation Asset (gx_landing or gx_bronze, etc.)
-        if source_expectations:
-            gx_source_name = f"gx_{name}_source"
-
-            @asset(
-                name=gx_source_name,
-                group_name=group_name,
-                deps=current_deps,
-                compute_kind="gx",
-                description=f"Great Expectations validation for {name} source data.",
-                config_schema={"execution_date": str},
-            )
-            def source_validation(context):
-                execution_date = context.op_config.get("execution_date")
-                engine = PureFlowEngine(execution_date=execution_date)
-
-                rendered_path = engine.render_path(source["path"], context=source_context)
-                success, report_url, error_msg = validate_data(
-                    path=rendered_path,
-                    expectations=source_expectations,
-                    data_format=source["format"],
-                    suite_name=f"suite_{gx_source_name}",
-                )
-
-                # Use AssetObservation to ensure metadata persists even on failure
-                # Numerical 'validation_score' enables 'Metadata Plots' in Dagster UI
-                context.log_event(
-                    AssetObservation(
-                        asset_key=context.asset_key,
-                        metadata={
-                            "gx_report_link": MetadataValue.url(report_url),
-                            "validation_status": MetadataValue.text("Success" if success else "Failed"),
-                            "validation_score": MetadataValue.float(1.0 if success else 0.0),
-                        }
-                    )
-                )
-
-                if not success:
-                    raise ValueError(
-                        f"Source validation failed for {name}. \n"
-                        f"Reason: {error_msg} \n"
-                        f"Check GX Report: {report_url}"
-                    )
-
-                return MaterializeResult(
-                    metadata={
-                        "gx_report_link": MetadataValue.url(report_url),
-                        "validation_status": MetadataValue.text("Success"),
-                        "validation_score": MetadataValue.float(1.0),
-                    }
-                )
-
-            assets.append(source_validation)
-            current_deps = [AssetKey([gx_source_name])]
-
-        # 2. Main Transformation Asset (bronze or silver, etc.)
+        # 1. Main Transformation Asset (bronze or silver, etc.)
         @asset(
             name=name,
             group_name=group_name,
@@ -111,13 +61,51 @@ class DataPipelineFactory:
             description=f"DuckDB transformation for {name}.",
             config_schema={"execution_date": str},
         )
-        def main_transformation(context):
+        def main_transformation(context, gx_resource: GreatExpectationsResource):
             execution_date = context.op_config.get("execution_date")
             engine = PureFlowEngine(execution_date=execution_date)
 
             rendered_source = engine.render_path(source["path"], context=source_context)
             rendered_target = engine.render_path(target["path"], context=target_context)
+            
+            # Tracking validation results
+            validation_metadata = {}
 
+            # --- GATEKEEPER: Source Validation ---
+            if source_expectations:
+                context.log.info(f"🛡️ [Gatekeeper] Validating source for {name}: {rendered_source}")
+                from validation.gx_validator import validate_data
+                success, report_url, error_msg = validate_data(
+                    path=rendered_source,
+                    expectations=source_expectations,
+                    data_format=source["format"],
+                    suite_name=f"check_{name}_source",
+                    context=gx_resource.get_context()
+                )
+                
+                validation_metadata["Source Validation Report"] = MetadataValue.url(report_url)
+                
+                if not success:
+                    context.log.error(f"❌ [Gatekeeper] Source validation FAILED for {name}. Quarantining...")
+                    q_path = engine.quarantine_data(rendered_source, reason=f"source_fail_{name}", source_format=source["format"])
+                    
+                    # Yield observation for visibility before crashing
+                    context.log_event(
+                        AssetObservation(
+                            asset_key=name,
+                            metadata={
+                                "validation_status": "FAILED",
+                                "GX Source Report": MetadataValue.url(report_url),
+                                "quarantine_path": MetadataValue.path(q_path),
+                                "error": MetadataValue.text(error_msg)
+                            }
+                        )
+                    )
+                    raise ValueError(f"Circuit Breaker: Source validation failed. Data quarantined. Report: {report_url}")
+                
+                context.log.info(f"✅ [Gatekeeper] Source validation passed for {name}.")
+
+            # --- EXECUTION: Transformation ---
             result = engine.execute_move_and_transform(
                 source_path=rendered_source,
                 source_format=source["format"],
@@ -126,72 +114,48 @@ class DataPipelineFactory:
                 sql_transform=sql_transform,
             )
 
+            # --- GATEKEEPER: Target Validation ---
+            if target_expectations:
+                context.log.info(f"🛡️ [Gatekeeper] Validating target for {name}: {rendered_target}")
+                from validation.gx_validator import validate_data
+                success, report_url, error_msg = validate_data(
+                    path=rendered_target,
+                    expectations=target_expectations,
+                    data_format=target["format"],
+                    suite_name=f"check_{name}_target",
+                    context=gx_resource.get_context()
+                )
+                
+                validation_metadata["Target Validation Report"] = MetadataValue.url(report_url)
+                
+                if not success:
+                    context.log.error(f"❌ [Gatekeeper] Target validation FAILED for {name}. Quarantining...")
+                    q_path = engine.quarantine_data(rendered_target, reason=f"target_fail_{name}", source_format=target["format"])
+                    
+                    context.log_event(
+                        AssetObservation(
+                            asset_key=name,
+                            metadata={
+                                "validation_status": "FAILED",
+                                "GX Target Report": MetadataValue.url(report_url),
+                                "quarantine_path": MetadataValue.path(q_path),
+                                "error": MetadataValue.text(error_msg)
+                            }
+                        )
+                    )
+                    raise ValueError(f"Circuit Breaker: Target validation failed. Data quarantined. Report: {report_url}")
+
+                context.log.info(f"✅ [Gatekeeper] Target validation passed for {name}.")
+
             return MaterializeResult(
                 metadata={
                     "rows_processed": MetadataValue.int(result["row_count"]),
                     "target_path": MetadataValue.path(result["target_path"]),
                     "status": "Success",
+                    **validation_metadata
                 }
             )
 
-        assets.append(main_transformation)
-        current_deps = [AssetKey([name])]
+        assets_and_checks.append(main_transformation)
 
-        # 3. Target Validation Asset (gx_bronze or gx_silver, etc.)
-        if target_expectations:
-            gx_target_name = f"gx_{name}"
-
-            @asset(
-                name=gx_target_name,
-                group_name=group_name,
-                deps=current_deps,
-                compute_kind="gx",
-                description=f"Great Expectations validation for {name} target data.",
-                config_schema={"execution_date": str},
-            )
-            def target_validation(context):
-                execution_date = context.op_config.get("execution_date")
-                engine = PureFlowEngine(execution_date=execution_date)
-
-                rendered_path = engine.render_path(target["path"], context=target_context)
-                success, report_url, error_msg = validate_data(
-                    path=rendered_path,
-                    expectations=target_expectations,
-                    data_format=target["format"],
-                    suite_name=f"suite_{gx_target_name}",
-                )
-
-                # Use AssetObservation to ensure metadata persists even on failure
-                # Numerical 'validation_score' enables 'Metadata Plots' in Dagster UI
-                context.log_event(
-                    AssetObservation(
-                        asset_key=context.asset_key,
-                        metadata={
-                            "gx_report_link": MetadataValue.url(report_url),
-                            "validation_status": MetadataValue.text("Success" if success else "Failed"),
-                            "validation_score": MetadataValue.float(1.0 if success else 0.0),
-                        }
-                    )
-                )
-
-                if not success:
-                    # Logic to quarantine data on target failure
-                    q_path = engine.quarantine_data(rendered_path, error_msg)
-                    raise ValueError(
-                        f"Target validation failed for {name}. \n"
-                        f"Data moved to quarantine: {q_path} \n"
-                        f"Reason: {error_msg} \n"
-                        f"Check GX Report: {report_url}"
-                    )
-
-                return MaterializeResult(
-                    metadata={
-                        "gx_report_link": MetadataValue.url(report_url),
-                        "validation_status": MetadataValue.text("Success"),
-                        "validation_score": MetadataValue.float(1.0),
-                    }
-                )
-
-            assets.append(target_validation)
-
-        return assets
+        return assets_and_checks

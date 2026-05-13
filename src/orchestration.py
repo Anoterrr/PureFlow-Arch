@@ -28,6 +28,9 @@ from utils.generate_clean_data import generate_clean_big_data
 from utils.generate_corrupt_data import corrupt_bronze_layer, corrupt_landing_zone
 from utils.generate_dirty_data import generate_dirty_big_data
 
+# Default configuration to avoid 404s for today's date if data isn't generated
+DEFAULT_DATE = "2026-04-19"
+
 # --- 1. dbt Configuration with Lineage Mapping ---
 DBT_PROJECT_DIR = Path(__file__).joinpath("..", "..", "dbt").resolve()
 dbt_resource = DbtCliResource(project_dir=os.fspath(DBT_PROJECT_DIR))
@@ -162,10 +165,14 @@ quality_test_job = define_asset_job(  # pylint: disable=assignment-from-no-retur
 )
 
 # Dynamic asset discovery:
-# 1. Scans the 'pipelines' package for assets created via Factory
-# 2. Scans the current module for dbt assets and local generator assets
+from pipelines.customers import customers_bronze_assets, customers_silver_assets
+from pipelines.sales import sales_bronze_assets, sales_silver_assets
+
 all_assets = [
-    *load_assets_from_package_name("pipelines"),
+    *customers_bronze_assets,
+    *customers_silver_assets,
+    *sales_bronze_assets,
+    *sales_silver_assets,
     *load_assets_from_current_module(),
 ]
 

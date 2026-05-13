@@ -1,7 +1,7 @@
 {
   "expectations": [
     {
-      "id": "3ff587b4-06a1-4af7-837d-033a05d39edc",
+      "id": "cfd3f3de-5a2e-4ffb-9152-8b4d921f5e99",
       "kwargs": {
         "column": "id"
       },
@@ -10,10 +10,10 @@
       "type": "expect_column_values_to_not_be_null"
     }
   ],
-  "id": "223a8836-1978-49a4-903d-0b4207901503",
+  "id": "79978e7c-058d-4a47-828e-86c1ba9c6074",
   "meta": {
     "great_expectations_version": "1.17.1"
   },
-  "name": "check_stg_customers_bronze_source",
+  "name": "check_stg_sales_bronze_target",
   "notes": null
 }

@@ -1,0 +1,20 @@
+{
+  "expectations": [
+    {
+      "id": "7943537d-7bb8-4ac7-94b2-f976f4964688",
+      "kwargs": {
+        "column": "email",
+        "regex": "[^@]+@[^@]+\\.[^@]+"
+      },
+      "meta": {},
+      "severity": "critical",
+      "type": "expect_column_values_to_match_regex"
+    }
+  ],
+  "id": "e455c849-2247-405c-aef6-3824bd6ce8fa",
+  "meta": {
+    "great_expectations_version": "1.17.1"
+  },
+  "name": "check_stg_customers_bronze_target",
+  "notes": null
+}

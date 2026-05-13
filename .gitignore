@@ -55,6 +55,7 @@ dbt/target/
 dbt/dbt_packages/
 dbt/logs/
 dbt/profiles.yml
+dbt/.user.yml
 # dbt-specific ignored files
 target/
 dbt_packages/
@@ -63,6 +64,8 @@ dbt_packages/
 dagster_home/
 .dagster/
 storage/
+*.tmp
+*~
 
 # 5. Quality & Validation (Great Expectations)
 # Ignore uncommitted checkpoints and generated data docs

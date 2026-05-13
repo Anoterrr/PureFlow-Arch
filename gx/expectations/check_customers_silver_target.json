@@ -1,19 +1,19 @@
 {
   "expectations": [
     {
-      "id": "3ff587b4-06a1-4af7-837d-033a05d39edc",
+      "id": "a45e4ec2-9203-4f07-9fdb-95a7ca1a7845",
       "kwargs": {
-        "column": "id"
+        "column": "email"
       },
       "meta": {},
       "severity": "critical",
       "type": "expect_column_values_to_not_be_null"
     }
   ],
-  "id": "223a8836-1978-49a4-903d-0b4207901503",
+  "id": "b4e3c516-d918-470e-8e51-53eb4bdc6e42",
   "meta": {
     "great_expectations_version": "1.17.1"
   },
-  "name": "check_stg_customers_bronze_source",
+  "name": "check_customers_silver_target",
   "notes": null
 }

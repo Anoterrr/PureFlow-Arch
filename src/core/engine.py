@@ -56,7 +56,7 @@ class PureFlowEngine:
         quarantine_prefix = f"quarantine/dt={self.execution_date}/reason={reason.replace(' ', '_')}"
         target_quarantine_path = f"s3://{bucket}/{quarantine_prefix}/{filename}"
 
-        conn = self.factory.get_duckdb_conn()
+        conn = self.factory.get_duckdb_conn(db_path=":memory:")
         self.factory.setup_s3_auth(conn)
 
         try:
@@ -106,7 +106,7 @@ class PureFlowEngine:
         source_path = self.render_path(source_path)
         target_path = self.render_path(target_path)
 
-        conn = self.factory.get_duckdb_conn()
+        conn = self.factory.get_duckdb_conn(db_path=":memory:")
         self.factory.setup_s3_auth(conn)
 
         try:

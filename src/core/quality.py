@@ -19,8 +19,7 @@ class GreatExpectationsResource(ConfigurableResource):
 
     def get_context(self):
         """Returns the GX Data Context."""
-        import great_expectations as gx
-        return gx.get_context(context_root_dir=self.ge_root_dir)
+        return get_gx_context()
 
 # --- Global SQLAlchemy Listener ---
 # This ensures that ANY DuckDB connection created via SQLAlchemy (by GX or others)
@@ -49,10 +48,12 @@ def set_duckdb_s3_config(dbapi_connection, _connection_record):
             cursor.execute(f"SET s3_use_ssl = {s3_cfg['s3_use_ssl']};")
             cursor.execute(f"SET s3_endpoint = '{s3_cfg['s3_endpoint']}';")
             
-            # Global-level
+            # Global-level (Ensures consistency across multiple connections in the same process)
             cursor.execute("SET GLOBAL s3_url_style = 'path';")
             cursor.execute("SET GLOBAL s3_use_ssl = false;")
             cursor.execute(f"SET GLOBAL s3_endpoint = '{s3_cfg['s3_endpoint']}';")
+            cursor.execute("SET GLOBAL memory_limit = '16GB';")
+            cursor.execute("SET GLOBAL threads = 4;")
             
             # 3. Create a default secret with EXPLICIT ENDPOINT and PATH style
             # Using DuckDB 1.1.0+ Secret type with broad SCOPE
@@ -136,40 +137,6 @@ def get_gx_context():
                     project_config_dict[key] = os.path.abspath(os.path.join(os.getcwd(), local_val))
 
     return gx.get_context(project_config=project_config_dict)
-
-
-def setup_gx_backend(context, datasource_name, factory):
-    """
-    Standardizes GX Backend setup using official add_sql pattern.
-    The global SQLAlchemy listener handles the S3 configuration via Secrets Manager.
-    We use a unique file-based DB per suite to ensure consistency and avoid locking/mismatch.
-    """
-    # Use a unique persistent file-based DB for this specific validation run
-    # This ensures that multiple connections (GX Pool + Raw) share the same state
-    db_path = os.path.abspath(f"data/gx_val_{datasource_name}.db")
-    os.makedirs(os.path.dirname(db_path), exist_ok=True)
-    
-    # We NO LONGER pass s3 params in the connection string to avoid "different configuration" errors.
-    # The @event.listens_for(Engine, "connect") hook handles this for GX.
-    conn_str = f"duckdb:///{db_path}"
-
-    try:
-        try:
-            context.data_sources.delete(datasource_name)
-        except Exception:
-            pass
-            
-        datasource = context.data_sources.add_sql(
-            name=datasource_name, connection_string=conn_str
-        )
-    except Exception:
-        datasource = context.data_sources.get(datasource_name)
-
-    # Use the SAME database file for the raw connection
-    raw_conn = factory.get_duckdb_conn(db_path=db_path)
-    factory.setup_s3_auth(raw_conn)
-
-    return datasource, raw_conn, db_path
 
 
 def get_or_create_suite(context, suite_name):
